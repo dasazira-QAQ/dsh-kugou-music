@@ -398,7 +398,7 @@ window.__ModuleLoader__.load({
 
         let info
         try {
-          info = await api(API + '/play?hash=' + encodeURIComponent(target.hash))
+          info = await api(API + '/play?hash=' + encodeURIComponent(target.hash) + '&albumId=' + encodeURIComponent(target.albumId || ''))
         } catch {
           setError('连不上 Host 接口')
           return

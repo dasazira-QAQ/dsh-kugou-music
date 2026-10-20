@@ -267,7 +267,8 @@ export function mountRoutes(webServer, ctx) {
         }
         if (sub === 'play' && req.method === 'GET') {
           const hash = url.searchParams.get('hash') || ''
-          const result = await resolvePlayUrl(hash, { cookie })
+          const albumId = url.searchParams.get('albumId') || ''
+          const result = await resolvePlayUrl(hash, { cookie, albumId })
           json(res, 200, { ok: true, ...result, hasCookie: Boolean(cookie) })
           return
         }
