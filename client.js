@@ -124,6 +124,21 @@ window.__ModuleLoader__.load({
 .kgm-side[data-bg="transparent"] .kgm-tag {
   text-shadow: none;
 }
+/* 浅色主题 + 毛玻璃：字重加深，避免半透明白底上发虚 */
+.kgm-root[data-theme="light"][data-bg="glass"] .kgm-bar,
+.kgm-side[data-theme="light"][data-bg="glass"],
+.kgm-bubble[data-theme="light"][data-bg="glass"],
+.kgm-mini[data-theme="light"][data-bg="glass"] {
+  --kgm-fg: #0f1218;
+  --kgm-dim: rgba(15, 18, 24, .74);
+  font-weight: 600;
+}
+.kgm-root[data-theme="light"][data-bg="glass"] .kgm-song-name,
+.kgm-root[data-theme="light"][data-bg="glass"] .kgm-title,
+.kgm-side[data-theme="light"][data-bg="glass"] .kgm-song-name,
+.kgm-side[data-theme="light"][data-bg="glass"] .kgm-title {
+  font-weight: 700;
+}
 .kgm-avatar { width: 34px; height: 34px; border-radius: 50%; flex: none; object-fit: cover; background: var(--kgm-hover); }
 .kgm-avatar-empty { display: flex; align-items: center; justify-content: center; color: var(--kgm-dim); font-size: 15px; }
 .kgm-nick { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1558,6 +1573,8 @@ window.__ModuleLoader__.load({
 
       if (cfg.ui !== 'dock') return null
 
+      const hasTrans = Boolean(p.lyric.meta.hasTrans) || p.lyric.lines.some((l) => l.trans)
+
       const progress = p.dur > 0 ? Math.min(100, (p.cur / p.dur) * 100) : 0
       const floating = !cfg.dockLocked
       const pos = drag || cfg.dockPos
@@ -1618,7 +1635,7 @@ window.__ModuleLoader__.load({
                   h('span', null, p.lyric.meta && p.lyric.meta.title ? p.lyric.meta.title : '歌词'),
                   h('span', null, [
                     p.lyric.meta && p.lyric.meta.wordByWord ? '逐字' : p.lyric.lines.length ? 'LRC' : '',
-                    p.lyric.lines.length && cfg.showTrans ? (p.lyric.meta.hasTrans ? '翻译' : '暂无翻译') : '',
+                    p.lyric.lines.length && cfg.showTrans ? (hasTrans ? '翻译' : '暂无翻译') : '',
                   ].filter(Boolean).join(' · ')),
                 ),
                 h('div', { className: 'kgm-lyric-box', ref: lyricRef }, h(LyricView, { lyric: p.lyric, cur: p.cur, boxRef: lyricRef, showTrans: cfg.showTrans })),
@@ -1660,6 +1677,16 @@ window.__ModuleLoader__.load({
               style: { height: 24 },
             },
             MODE_LABEL[cfg.playMode],
+          ),
+          h(
+            'button',
+            {
+              className: 'kgm-mode-pill' + (cfg.showTrans ? ' kgm-on' : ''),
+              onClick: () => settings.update({ showTrans: !cfg.showTrans }),
+              title: cfg.showTrans ? '关闭歌词翻译' : '打开歌词翻译',
+              style: { height: 24 },
+            },
+            '译',
           ),
           h('input', { className: 'kgm-volume', type: 'range', min: 0, max: 1, step: 0.01, value: p.volume, onChange: (e) => player.setVolume(Number(e.target.value)), title: '音量' }),
           h('button', {
@@ -1716,6 +1743,8 @@ window.__ModuleLoader__.load({
 
       if (cfg.ui !== 'side') return null
 
+      const hasTrans = Boolean(p.lyric.meta.hasTrans) || p.lyric.lines.some((l) => l.trans)
+
       const progress = p.dur > 0 ? Math.min(100, (p.cur / p.dur) * 100) : 0
       const panelBg = cfg.theme === 'dark' ? `rgba(26,28,36,${cfg.bgOpacity})` : `rgba(255,255,255,${cfg.bgOpacity})`
       const onSeek = (e) => {
@@ -1759,6 +1788,12 @@ window.__ModuleLoader__.load({
             'div',
             { className: 'kgm-bubble-actions' },
             h('button', { className: 'kgm-main', onClick: player.toggle, title: p.playing ? '暂停' : '播放', style: { width: 32, height: 32 } }, p.playing ? Icon.pause() : Icon.play()),
+            h('button', {
+              className: 'kgm-hk-btn' + (cfg.showTrans ? ' kgm-on' : ''),
+              style: { flex: 'none', width: 26, height: 26, padding: 0, borderRadius: 8 },
+              onClick: () => settings.update({ showTrans: !cfg.showTrans }),
+              title: cfg.showTrans ? '关闭歌词翻译' : '打开歌词翻译',
+            }, '译'),
             h('button', {
               className: 'kgm-btn' + (cfg.bubbleLocked ? ' kgm-locked' : ''),
               onClick: () => settings.update({ bubbleLocked: !cfg.bubbleLocked }),
@@ -1814,7 +1849,7 @@ window.__ModuleLoader__.load({
           { className: 'kgm-side-lyric' },
           h('div', { className: 'kgm-lyric-head' }, h('span', null, p.lyric.meta && p.lyric.meta.title ? p.lyric.meta.title : '歌词'), h('span', null, [
             p.lyric.meta && p.lyric.meta.wordByWord ? '逐字' : '',
-            p.lyric.lines.length && cfg.showTrans ? (p.lyric.meta.hasTrans ? '翻译' : '暂无翻译') : '',
+            p.lyric.lines.length && cfg.showTrans ? (hasTrans ? '翻译' : '暂无翻译') : '',
           ].filter(Boolean).join(' · '))),
           h('div', { className: 'kgm-lyric-box', ref: lyricRef }, h(LyricView, { lyric: p.lyric, cur: p.cur, boxRef: lyricRef, showTrans: cfg.showTrans })),
         ),
@@ -1843,6 +1878,16 @@ window.__ModuleLoader__.load({
                 style: { height: 22 },
               },
               MODE_LABEL[cfg.playMode],
+            ),
+            h(
+              'button',
+              {
+                className: 'kgm-mode-pill' + (cfg.showTrans ? ' kgm-on' : ''),
+                onClick: () => settings.update({ showTrans: !cfg.showTrans }),
+                title: cfg.showTrans ? '关闭歌词翻译' : '打开歌词翻译',
+                style: { height: 22 },
+              },
+              '译',
             ),
           ),
           h(
