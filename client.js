@@ -245,6 +245,50 @@ window.__ModuleLoader__.load({
 .kgm-mode.kgm-on { border-color: var(--kgm-brand); background: color-mix(in srgb, var(--kgm-brand) 8%, transparent); }
 .kgm-mode-name { font-size: 12px; font-weight: 600; }
 .kgm-mode-desc { font-size: 10.5px; color: var(--kgm-dim); margin-top: 2px; }
+.kgm-opacity { display: flex; align-items: center; gap: 10px; }
+.kgm-opacity input { flex: 1; accent-color: var(--kgm-brand); }
+.kgm-opacity-val { font-size: 11px; color: var(--kgm-dim); font-variant-numeric: tabular-nums; width: 40px; text-align: right; }
+.kgm-switch { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+.kgm-switch input { accent-color: var(--kgm-brand); width: 15px; height: 15px; }
+.kgm-switch-text { font-size: 12px; }
+.kgm-bubble {
+  position: fixed; left: 24px; bottom: 24px; z-index: 60;
+  width: 172px; height: 172px; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px;
+  padding: 20px; text-align: center;
+  border: 1px solid var(--kgm-border); color: var(--kgm-fg);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6);
+  box-shadow: var(--kgm-shadow); pointer-events: auto; font-size: 13px;
+  --kgm-bg: rgba(255,255,255,.74); --kgm-fg: #1b1f27; --kgm-dim: rgba(27,31,39,.58);
+  --kgm-border: rgba(20,26,40,.10); --kgm-hover: rgba(20,26,40,.07);
+  --kgm-shadow: 0 10px 30px rgba(20,26,40,.14); --kgm-brand: #3f6bff;
+}
+.kgm-bubble[data-theme="dark"] {
+  --kgm-fg: #eef1f7; --kgm-dim: rgba(238,241,247,.56); --kgm-border: rgba(255,255,255,.12);
+  --kgm-hover: rgba(255,255,255,.10); --kgm-shadow: 0 14px 36px rgba(0,0,0,.46);
+}
+.kgm-bubble-lyric {
+  font-size: 12px; line-height: 1.5; max-height: 58px; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+}
+.kgm-bubble-actions { display: flex; gap: 6px; align-items: center; }
+.kgm-mini {
+  position: fixed; left: 8px; bottom: 62px; z-index: 59;
+  width: calc(var(--dsh-windows-sidebar-width, 300px) - 16px);
+  padding: 8px 10px; border-radius: 10px;
+  border: 1px solid var(--kgm-border); color: var(--kgm-fg);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5);
+  box-shadow: var(--kgm-shadow); pointer-events: auto; font-size: 12px;
+  --kgm-fg: #1b1f27; --kgm-dim: rgba(27,31,39,.58);
+  --kgm-border: rgba(20,26,40,.10); --kgm-hover: rgba(20,26,40,.07);
+  --kgm-shadow: 0 10px 30px rgba(20,26,40,.14); --kgm-brand: #3f6bff;
+}
+.kgm-mini[data-theme="dark"] {
+  --kgm-fg: #eef1f7; --kgm-dim: rgba(238,241,247,.56); --kgm-border: rgba(255,255,255,.12);
+  --kgm-shadow: 0 14px 36px rgba(0,0,0,.46);
+}
+.kgm-mini-line { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.kgm-mini-song { font-size: 10.5px; color: var(--kgm-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
 `
 
     /* ------------------------------------------------------------------ */
@@ -290,6 +334,8 @@ window.__ModuleLoader__.load({
         dockLocked: initial.dockLocked !== false,
         dockPos: initial.dockPos || null,
         sideCollapsed: false,
+        bgOpacity: typeof initial.bgOpacity === 'number' ? initial.bgOpacity : 0.86,
+        lyricSidebar: initial.lyricSidebar === true,
       }
       const listeners = new Set()
       return {
@@ -591,6 +637,18 @@ window.__ModuleLoader__.load({
             ? h('span', { className: 'kgm-tag kgm-tag-vip' }, 'VIP')
             : h('span', { className: 'kgm-tag' }, '免费'),
       )
+    }
+
+    /** 当前正在唱的那一句。 */
+    function currentLine(lyric, cur) {
+      const ms = cur * 1000
+      let idx = -1
+      for (let i = 0; i < lyric.lines.length; i++) {
+        if (lyric.lines[i].start <= ms) idx = i
+        else break
+      }
+      if (idx < 0) return ''
+      return lyric.lines[idx].words.map((w) => w.text).join('')
     }
 
     function LyricView({ lyric, cur, boxRef }) {
@@ -913,6 +971,30 @@ window.__ModuleLoader__.load({
             h('div', { className: 'kgm-mode-desc' }, '固定左侧，带歌词面板'),
           ),
         ),
+        h('div', { className: 'kgm-section-title' }, '侧边栏背景透明度'),
+        h(
+          'div',
+          { className: 'kgm-opacity', style: { marginBottom: 12 } },
+          h('input', {
+            type: 'range',
+            min: 0.2,
+            max: 1,
+            step: 0.01,
+            value: cfg.bgOpacity,
+            onChange: (e) => settings.update({ bgOpacity: Number(e.target.value) }),
+          }),
+          h('span', { className: 'kgm-opacity-val' }, Math.round(cfg.bgOpacity * 100) + '%'),
+        ),
+        h(
+          'label',
+          { className: 'kgm-switch', style: { marginBottom: 12 } },
+          h('input', {
+            type: 'checkbox',
+            checked: cfg.lyricSidebar,
+            onChange: (e) => settings.update({ lyricSidebar: e.target.checked }),
+          }),
+          h('span', { className: 'kgm-switch-text' }, '在左侧边栏（工作文件夹下方）显示歌词'),
+        ),
         h('div', { className: 'kgm-section-title' }, '主题'),
         h(
           'div',
@@ -1187,29 +1269,35 @@ window.__ModuleLoader__.load({
       if (cfg.ui !== 'side') return null
 
       const progress = p.dur > 0 ? Math.min(100, (p.cur / p.dur) * 100) : 0
+      const panelBg = cfg.theme === 'dark' ? `rgba(26,28,36,${cfg.bgOpacity})` : `rgba(255,255,255,${cfg.bgOpacity})`
       const onSeek = (e) => {
         const rect = e.currentTarget.getBoundingClientRect()
         player.seekTo((e.clientX - rect.left) / rect.width)
       }
 
       if (cfg.sideCollapsed) {
+        const line = currentLine(p.lyric, p.cur)
         return h(
           'div',
-          { className: 'kgm-side kgm-collapsed', 'data-theme': cfg.theme, style: { '--kgm-brand': cfg.accent } },
+          {
+            className: 'kgm-bubble',
+            'data-theme': cfg.theme,
+            style: { background: cfg.theme === 'dark' ? `rgba(26,28,36,${cfg.bgOpacity})` : `rgba(255,255,255,${cfg.bgOpacity})`, '--kgm-brand': cfg.accent },
+          },
           h('style', null, CSS),
+          h('div', { className: 'kgm-bubble-lyric' }, line || (p.song ? p.song.name : '♫ 酷狗音乐')),
           h(
             'div',
-            { className: 'kgm-collapsed-body' },
-            h('button', { className: 'kgm-btn', onClick: () => settings.update({ sideCollapsed: false }), title: '展开' }, Icon.expand()),
-            h('div', { className: 'kgm-side-cover' + (p.playing ? ' kgm-spin' : ''), title: p.song ? p.song.name : '酷狗' }, p.playing ? '' : '♫'),
-            h('button', { className: 'kgm-main', onClick: player.toggle, title: p.playing ? '暂停' : '播放', style: { width: 30, height: 30 } }, p.playing ? Icon.pause() : Icon.play()),
+            { className: 'kgm-bubble-actions' },
+            h('button', { className: 'kgm-main', onClick: player.toggle, title: p.playing ? '暂停' : '播放', style: { width: 32, height: 32 } }, p.playing ? Icon.pause() : Icon.play()),
+            h('button', { className: 'kgm-btn', onClick: () => settings.update({ sideCollapsed: false }), title: '展开侧边栏' }, Icon.expand()),
           ),
         )
       }
 
       return h(
         'div',
-        { className: 'kgm-side', 'data-theme': cfg.theme, style: { '--kgm-brand': cfg.accent } },
+        { className: 'kgm-side', 'data-theme': cfg.theme, style: { '--kgm-brand': cfg.accent, background: panelBg } },
         h('style', null, CSS),
         h(
           'div',
@@ -1285,6 +1373,28 @@ window.__ModuleLoader__.load({
       )
     }
 
+    /** 左侧边栏（工作文件夹下方）的歌词条。 */
+    function KugouMini() {
+      const cfg = useSettings()
+      const p = usePlayer()
+      if (!cfg.lyricSidebar || cfg.ui === 'side') return null
+      const line = currentLine(p.lyric, p.cur)
+      const bg = cfg.theme === 'dark' ? `rgba(26,28,36,${cfg.bgOpacity})` : `rgba(255,255,255,${cfg.bgOpacity})`
+      return h(
+        'div',
+        {
+          className: 'kgm-mini',
+          'data-theme': cfg.theme,
+          style: { background: bg, '--kgm-brand': cfg.accent },
+          onClick: () => settings.update({ ui: 'side', sideCollapsed: false }),
+          title: '点击打开酷狗侧边栏',
+        },
+        h('style', null, CSS),
+        h('div', { className: 'kgm-mini-line' }, line || (p.song ? p.song.name : '酷狗音乐 · 未播放')),
+        p.song ? h('div', { className: 'kgm-mini-song' }, p.song.name + (p.song.singer ? ' · ' + p.song.singer : '')) : null,
+      )
+    }
+
     return {
       inject: ['slots'],
       apply(ctx) {
@@ -1300,6 +1410,12 @@ window.__ModuleLoader__.load({
           slots.register(
             { name: 'shell.overlay', id: 'kugou-music-side', order: 900 },
             () => h(KugouSide),
+          ),
+        )
+        slots.inject('shell.overlay', () =>
+          slots.register(
+            { name: 'shell.overlay', id: 'kugou-music-mini', order: 901 },
+            () => h(KugouMini),
           ),
         )
       },

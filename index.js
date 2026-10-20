@@ -253,8 +253,9 @@ export function mountRoutes(webServer, ctx) {
           return
         }
         if (sub === 'local-lists' && req.method === 'GET') {
-          const result = await listLocalPlaylists()
-          json(res, 200, { ok: true, ...result })
+          const cred = parseKuGooCredential(cookie)
+          const result = await listLocalPlaylists({ userid: cred.userid })
+          json(res, 200, { ok: true, userid: cred.userid, nick: cred.nick, ...result })
           return
         }
         if (sub === 'local-files' && req.method === 'GET') {
