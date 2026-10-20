@@ -1,0 +1,45 @@
+{
+  "name": "dsh-kugou-music",
+  "version": "0.1.0",
+  "description": "在 DeepSeek Harness 里搜索、播放酷狗音乐：输入框下方常驻播放条 + 逐字歌词面板，免费歌开箱即听，VIP 歌可填 Cookie。",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "lib/",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
+    }
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "kugou",
+    "music",
+    "lyrics",
+    "player"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13.0"
+  }
+}

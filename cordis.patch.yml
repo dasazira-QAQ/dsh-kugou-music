@@ -1,0 +1,4 @@
+- insert:
+    - id: kugou-music
+      name: dsh-kugou-music
+      config: {}
