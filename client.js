@@ -345,9 +345,9 @@ window.__ModuleLoader__.load({
     }
 
     /* ------------------------------------------------------------------ */
-    /* 全局设置 store                                                       */
+    /* 全局设置 store（跨模块重复加载保持单例）                              */
     /* ------------------------------------------------------------------ */
-    const settings = (() => {
+    function createSettings() {
       const initial = loadStore()
       const state = {
         theme: initial.theme === 'dark' ? 'dark' : 'light',
@@ -376,6 +376,14 @@ window.__ModuleLoader__.load({
           listeners.forEach((fn) => fn())
         },
       }
+    }
+
+    // 模块可能被重复加载（HMR / slot 重挂），设置与播放器必须全局唯一
+    const settings = (() => {
+      if (typeof window !== 'undefined' && window.__dshKugouSettings) return window.__dshKugouSettings
+      const store = createSettings()
+      if (typeof window !== 'undefined') window.__dshKugouSettings = store
+      return store
     })()
 
     function useSettings() {
@@ -387,7 +395,7 @@ window.__ModuleLoader__.load({
     /* ------------------------------------------------------------------ */
     /* 播放器单例：两个 UI 共享，切换界面不中断                             */
     /* ------------------------------------------------------------------ */
-    const player = (() => {
+    function createPlayer() {
       const state = {
         song: null,
         playing: false,
@@ -402,6 +410,7 @@ window.__ModuleLoader__.load({
       const listeners = new Set()
       let audio = null
       let proxyTried = ''
+      let playSeq = 0
 
       const emit = () => listeners.forEach((fn) => fn())
 
@@ -487,6 +496,7 @@ window.__ModuleLoader__.load({
       async function playSong(song) {
         if (!song) return
         const a = ensureAudio()
+        const seq = ++playSeq
         state.error = ''
         let idx = state.queue.findIndex((s) => sameSong(s, song))
         if (idx < 0) {
@@ -502,6 +512,7 @@ window.__ModuleLoader__.load({
         saveStore({ queue: state.queue.map((s) => ({ hash: s.hash, name: s.name, singer: s.singer, duration: s.duration, localPath: s.localPath, albumId: s.albumId, kgm: s.kgm })) })
 
         if (String(song.localPath || '').trim()) {
+          if (seq !== playSeq) return
           proxyTried = ''
           a.src = API + '/local-audio?path=' + encodeURIComponent(song.localPath)
           a.volume = state.volume
@@ -521,10 +532,13 @@ window.__ModuleLoader__.load({
             API + '/play?hash=' + encodeURIComponent(song.hash) + '&albumId=' + encodeURIComponent(song.albumId || ''),
           )
         } catch {
+          if (seq !== playSeq) return
           state.error = '连不上 Host 接口'
           emit()
           return
         }
+        // 请求期间用户又切了歌：丢弃这次结果，避免两首同时播
+        if (seq !== playSeq) return
         if (!info.ok) {
           state.error = info.error || '取播放地址失败'
           emit()
@@ -543,6 +557,7 @@ window.__ModuleLoader__.load({
         try {
           await a.play()
         } catch (e) {
+          if (seq !== playSeq) return
           state.error = '浏览器拒绝播放：' + (e && e.message ? e.message : String(e))
           emit()
         }
@@ -686,6 +701,13 @@ window.__ModuleLoader__.load({
         setQueue,
         appendQueue,
       }
+    }
+
+    const player = (() => {
+      if (typeof window !== 'undefined' && window.__dshKugouPlayer) return window.__dshKugouPlayer
+      const instance = createPlayer()
+      if (typeof window !== 'undefined') window.__dshKugouPlayer = instance
+      return instance
     })()
 
     /* ---------------- 全局热键 ---------------- */
@@ -737,7 +759,11 @@ window.__ModuleLoader__.load({
       )
     }
 
-    if (typeof window !== 'undefined') bindHotkeys()
+    // 热键监听只绑定一次，避免模块重复加载后一次按键触发多份
+    if (typeof window !== 'undefined' && !window.__dshKugouHotkeysBound) {
+      window.__dshKugouHotkeysBound = true
+      bindHotkeys()
+    }
 
     function usePlayer() {
       const [, force] = useState(0)
