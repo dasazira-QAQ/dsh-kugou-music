@@ -96,17 +96,33 @@ window.__ModuleLoader__.load({
   border-color: transparent !important;
   box-shadow: none !important;
 }
-.kgm-root[data-theme="light"][data-bg="transparent"] .kgm-bar,
-.kgm-side[data-theme="light"][data-bg="transparent"],
-.kgm-bubble[data-theme="light"][data-bg="transparent"],
-.kgm-mini[data-theme="light"][data-bg="transparent"] {
-  text-shadow: 0 1px 2px rgba(255, 255, 255, .9);
+/* 完全透明：字幕式白字 + 黑描边，深浅背景都能读 */
+.kgm-root[data-bg="transparent"] .kgm-bar,
+.kgm-root[data-bg="transparent"] .kgm-panel,
+.kgm-side[data-bg="transparent"],
+.kgm-bubble[data-bg="transparent"],
+.kgm-mini[data-bg="transparent"] {
+  color: #fff;
+  --kgm-fg: #ffffff;
+  --kgm-dim: rgba(255, 255, 255, .78);
+  text-shadow:
+    0 0 2px rgba(0, 0, 0, .95),
+    0 1px 3px rgba(0, 0, 0, .8),
+    1px 0 2px rgba(0, 0, 0, .7),
+    -1px 0 2px rgba(0, 0, 0, .7);
 }
-.kgm-root[data-theme="dark"][data-bg="transparent"] .kgm-bar,
-.kgm-side[data-theme="dark"][data-bg="transparent"],
-.kgm-bubble[data-theme="dark"][data-bg="transparent"],
-.kgm-mini[data-theme="dark"][data-bg="transparent"] {
-  text-shadow: 0 1px 3px rgba(0, 0, 0, .55);
+.kgm-root[data-bg="transparent"] .kgm-input,
+.kgm-side[data-bg="transparent"] .kgm-input,
+.kgm-root[data-bg="transparent"] .kgm-cookie textarea,
+.kgm-side[data-bg="transparent"] .kgm-cookie textarea {
+  background: rgba(0, 0, 0, .28);
+  border-color: rgba(255, 255, 255, .28);
+  color: #fff;
+  text-shadow: none;
+}
+.kgm-root[data-bg="transparent"] .kgm-tag,
+.kgm-side[data-bg="transparent"] .kgm-tag {
+  text-shadow: none;
 }
 .kgm-avatar { width: 34px; height: 34px; border-radius: 50%; flex: none; object-fit: cover; background: var(--kgm-hover); }
 .kgm-avatar-empty { display: flex; align-items: center; justify-content: center; color: var(--kgm-dim); font-size: 15px; }
@@ -244,6 +260,8 @@ window.__ModuleLoader__.load({
 .kgm-lyric-box { flex: 1; overflow-y: auto; padding: 8px 18px 20px; scrollbar-width: thin; }
 .kgm-lyric-line { padding: 5px 0; font-size: 13px; line-height: 1.55; opacity: .38; transition: opacity .22s; }
 .kgm-lyric-line.kgm-active { opacity: 1; font-weight: 600; color: var(--kgm-brand); }
+.kgm-lyric-trans { font-size: 11px; line-height: 1.45; opacity: .68; font-weight: 400; margin-top: 2px; color: var(--kgm-fg); }
+.kgm-lyric-line.kgm-active .kgm-lyric-trans { opacity: .82; }
 .kgm-w { transition: color .1s; }
 .kgm-w-done { color: var(--kgm-brand); }
 .kgm-err { margin: 0 12px 8px; padding: 7px 10px; border-radius: 9px; font-size: 12px; background: rgba(220,80,70,.12); color: #e05a4e; }
@@ -301,9 +319,9 @@ window.__ModuleLoader__.load({
 .kgm-switch-text { font-size: 12px; }
 .kgm-bubble {
   position: fixed; left: 24px; bottom: 88px; z-index: 60;
-  width: 172px; height: 172px; border-radius: 50%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px;
-  padding: 20px; text-align: center;
+  width: 184px; height: 184px; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 0;
+  padding: 28px 20px 18px; text-align: center;
   border: 1px solid var(--kgm-border); color: var(--kgm-fg);
   -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6);
   box-shadow: var(--kgm-shadow); pointer-events: auto; font-size: 13px;
@@ -318,9 +336,11 @@ window.__ModuleLoader__.load({
   --kgm-hover: rgba(255,255,255,.10); --kgm-shadow: 0 14px 36px rgba(0,0,0,.46);
 }
 .kgm-bubble-lyric {
-  font-size: 12px; line-height: 1.5; max-height: 58px; overflow: hidden;
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  flex: 1; min-height: 0; width: 100%; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 12px; line-height: 1.5; gap: 2px;
 }
+.kgm-bubble-trans { font-size: 10.5px; opacity: .72; line-height: 1.4; }
 .kgm-bubble-actions { display: flex; gap: 6px; align-items: center; }
 .kgm-mini {
   position: fixed; left: 8px; bottom: 62px; z-index: 59;
@@ -387,6 +407,7 @@ window.__ModuleLoader__.load({
         sideCollapsed: true,
         bgOpacity: typeof initial.bgOpacity === 'number' ? initial.bgOpacity : 0.86,
         bgMode: initial.bgMode === 'transparent' ? 'transparent' : 'glass',
+        showTrans: initial.showTrans === true,
         lyricSidebar: initial.lyricSidebar === true,
         bubbleLocked: initial.bubbleLocked !== false,
         bubblePos: initial.bubblePos || null,
@@ -933,7 +954,19 @@ window.__ModuleLoader__.load({
       return lyric.lines[idx].words.map((w) => w.text).join('')
     }
 
-    function LyricView({ lyric, cur, boxRef }) {
+    /** 当前行的翻译（酷狗词库，没有就空串）。 */
+    function currentTrans(lyric, cur) {
+      const ms = cur * 1000
+      let idx = -1
+      for (let i = 0; i < lyric.lines.length; i++) {
+        if (lyric.lines[i].start <= ms) idx = i
+        else break
+      }
+      if (idx < 0) return ''
+      return lyric.lines[idx].trans || ''
+    }
+
+    function LyricView({ lyric, cur, boxRef, showTrans }) {
       const lineIdx = useMemo(() => {
         const ms = cur * 1000
         let idx = -1
@@ -955,14 +988,21 @@ window.__ModuleLoader__.load({
       if (!lyric.lines.length) return h('div', { className: 'kgm-hint' }, '播放歌曲后这里显示歌词')
       return lyric.lines.map((line, i) => {
         const active = i === lineIdx
+        const trans = showTrans && line.trans ? h('div', { className: 'kgm-lyric-trans' }, line.trans) : null
         if (!active) {
-          return h('div', { key: i, className: 'kgm-lyric-line', 'data-line': i }, line.words.map((w) => w.text).join(''))
+          return h(
+            'div',
+            { key: i, className: 'kgm-lyric-line', 'data-line': i },
+            line.words.map((w) => w.text).join(''),
+            trans,
+          )
         }
         const rel = cur * 1000 - line.start
         return h(
           'div',
           { key: i, className: 'kgm-lyric-line kgm-active', 'data-line': i },
           line.words.map((w, j) => h('span', { key: j, className: rel >= w.t ? 'kgm-w kgm-w-done' : 'kgm-w' }, w.text)),
+          trans,
         )
       })
     }
@@ -1348,6 +1388,16 @@ window.__ModuleLoader__.load({
           }),
           h('span', { className: 'kgm-switch-text' }, '在左侧边栏（工作文件夹下方）显示歌词'),
         ),
+        h(
+          'label',
+          { className: 'kgm-switch', style: { marginBottom: 12 } },
+          h('input', {
+            type: 'checkbox',
+            checked: cfg.showTrans,
+            onChange: (e) => settings.update({ showTrans: e.target.checked }),
+          }),
+          h('span', { className: 'kgm-switch-text' }, '显示歌词翻译（酷狗自带词库）'),
+        ),
         h('div', { className: 'kgm-section-title' }, '主题'),
         h(
           'div',
@@ -1566,9 +1616,12 @@ window.__ModuleLoader__.load({
                   'div',
                   { className: 'kgm-lyric-head' },
                   h('span', null, p.lyric.meta && p.lyric.meta.title ? p.lyric.meta.title : '歌词'),
-                  h('span', null, p.lyric.meta && p.lyric.meta.wordByWord ? '逐字' : p.lyric.lines.length ? 'LRC' : ''),
+                  h('span', null, [
+                    p.lyric.meta && p.lyric.meta.wordByWord ? '逐字' : p.lyric.lines.length ? 'LRC' : '',
+                    p.lyric.lines.length && cfg.showTrans ? (p.lyric.meta.hasTrans ? '翻译' : '暂无翻译') : '',
+                  ].filter(Boolean).join(' · ')),
                 ),
-                h('div', { className: 'kgm-lyric-box', ref: lyricRef }, h(LyricView, { lyric: p.lyric, cur: p.cur, boxRef: lyricRef })),
+                h('div', { className: 'kgm-lyric-box', ref: lyricRef }, h(LyricView, { lyric: p.lyric, cur: p.cur, boxRef: lyricRef, showTrans: cfg.showTrans })),
               ),
             )
           : null,
@@ -1694,7 +1747,14 @@ window.__ModuleLoader__.load({
           'div',
           { className: 'kgm-bubble', 'data-theme': cfg.theme, 'data-bg': cfg.bgMode, style: bubbleStyle, onPointerDown: startBubble },
           h('style', null, CSS),
-          h('div', { className: 'kgm-bubble-lyric' }, line || (p.song ? p.song.name : '♫ 酷狗音乐')),
+          h(
+            'div',
+            { className: 'kgm-bubble-lyric' },
+            h('div', null, line || (p.song ? p.song.name : '♫ 酷狗音乐')),
+            cfg.showTrans && currentTrans(p.lyric, p.cur)
+              ? h('div', { className: 'kgm-bubble-trans' }, currentTrans(p.lyric, p.cur))
+              : null,
+          ),
           h(
             'div',
             { className: 'kgm-bubble-actions' },
@@ -1752,8 +1812,11 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'kgm-side-lyric' },
-          h('div', { className: 'kgm-lyric-head' }, h('span', null, p.lyric.meta && p.lyric.meta.title ? p.lyric.meta.title : '歌词'), h('span', null, p.lyric.meta && p.lyric.meta.wordByWord ? '逐字' : '')),
-          h('div', { className: 'kgm-lyric-box', ref: lyricRef }, h(LyricView, { lyric: p.lyric, cur: p.cur, boxRef: lyricRef })),
+          h('div', { className: 'kgm-lyric-head' }, h('span', null, p.lyric.meta && p.lyric.meta.title ? p.lyric.meta.title : '歌词'), h('span', null, [
+            p.lyric.meta && p.lyric.meta.wordByWord ? '逐字' : '',
+            p.lyric.lines.length && cfg.showTrans ? (p.lyric.meta.hasTrans ? '翻译' : '暂无翻译') : '',
+          ].filter(Boolean).join(' · '))),
+          h('div', { className: 'kgm-lyric-box', ref: lyricRef }, h(LyricView, { lyric: p.lyric, cur: p.cur, boxRef: lyricRef, showTrans: cfg.showTrans })),
         ),
         h(
           'div',
