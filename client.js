@@ -85,6 +85,29 @@ window.__ModuleLoader__.load({
 .kgm-modes-mini { display: flex; gap: 6px; }
 .kgm-mode-pill { border: 1px solid var(--kgm-border); background: transparent; color: var(--kgm-dim); border-radius: 8px; padding: 4px 10px; font-size: 11px; cursor: pointer; }
 .kgm-mode-pill.kgm-on { border-color: var(--kgm-brand); color: var(--kgm-brand); background: color-mix(in srgb, var(--kgm-brand) 10%, transparent); }
+.kgm-root[data-bg="transparent"] .kgm-bar,
+.kgm-root[data-bg="transparent"] .kgm-panel,
+.kgm-side[data-bg="transparent"],
+.kgm-bubble[data-bg="transparent"],
+.kgm-mini[data-bg="transparent"] {
+  background: transparent !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.kgm-root[data-theme="light"][data-bg="transparent"] .kgm-bar,
+.kgm-side[data-theme="light"][data-bg="transparent"],
+.kgm-bubble[data-theme="light"][data-bg="transparent"],
+.kgm-mini[data-theme="light"][data-bg="transparent"] {
+  text-shadow: 0 1px 2px rgba(255, 255, 255, .9);
+}
+.kgm-root[data-theme="dark"][data-bg="transparent"] .kgm-bar,
+.kgm-side[data-theme="dark"][data-bg="transparent"],
+.kgm-bubble[data-theme="dark"][data-bg="transparent"],
+.kgm-mini[data-theme="dark"][data-bg="transparent"] {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .55);
+}
 .kgm-avatar { width: 34px; height: 34px; border-radius: 50%; flex: none; object-fit: cover; background: var(--kgm-hover); }
 .kgm-avatar-empty { display: flex; align-items: center; justify-content: center; color: var(--kgm-dim); font-size: 15px; }
 .kgm-nick { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -363,6 +386,7 @@ window.__ModuleLoader__.load({
         // 每次打开 DSH 都从收起的圆形气泡开始
         sideCollapsed: true,
         bgOpacity: typeof initial.bgOpacity === 'number' ? initial.bgOpacity : 0.86,
+        bgMode: initial.bgMode === 'transparent' ? 'transparent' : 'glass',
         lyricSidebar: initial.lyricSidebar === true,
         bubbleLocked: initial.bubbleLocked !== false,
         bubblePos: initial.bubblePos || null,
@@ -1293,6 +1317,13 @@ window.__ModuleLoader__.load({
           }),
         ),
         h('div', { className: 'kgm-small' }, '点按钮后直接按键；单键只支持 F1-F12 / 方向键 / 空格等，其余请用组合键。'),
+        h('div', { className: 'kgm-section-title' }, '背景'),
+        h(
+          'div',
+          { className: 'kgm-modes-mini', style: { marginBottom: 12 } },
+          h('button', { className: 'kgm-mode-pill' + (cfg.bgMode === 'glass' ? ' kgm-on' : ''), onClick: () => settings.update({ bgMode: 'glass' }) }, '毛玻璃'),
+          h('button', { className: 'kgm-mode-pill' + (cfg.bgMode === 'transparent' ? ' kgm-on' : ''), onClick: () => settings.update({ bgMode: 'transparent' }) }, '完全透明'),
+        ),
         h('div', { className: 'kgm-section-title' }, '侧边栏背景透明度'),
         h(
           'div',
@@ -1498,7 +1529,7 @@ window.__ModuleLoader__.load({
 
       return h(
         'div',
-        { className: wrapClass, 'data-theme': cfg.theme, style: { ...wrapStyle, '--kgm-brand': cfg.accent } },
+        { className: wrapClass, 'data-theme': cfg.theme, 'data-bg': cfg.bgMode, style: { ...wrapStyle, '--kgm-brand': cfg.accent } },
         h('style', null, CSS),
         floating ? h('div', { className: 'kgm-dock-spacer' }) : null,
         expanded
@@ -1661,7 +1692,7 @@ window.__ModuleLoader__.load({
         }
         return h(
           'div',
-          { className: 'kgm-bubble', 'data-theme': cfg.theme, style: bubbleStyle, onPointerDown: startBubble },
+          { className: 'kgm-bubble', 'data-theme': cfg.theme, 'data-bg': cfg.bgMode, style: bubbleStyle, onPointerDown: startBubble },
           h('style', null, CSS),
           h('div', { className: 'kgm-bubble-lyric' }, line || (p.song ? p.song.name : '♫ 酷狗音乐')),
           h(
@@ -1683,7 +1714,12 @@ window.__ModuleLoader__.load({
 
       return h(
         'div',
-        { className: 'kgm-side', 'data-theme': cfg.theme, style: { '--kgm-brand': cfg.accent, background: panelBg } },
+        {
+          className: 'kgm-side',
+          'data-theme': cfg.theme,
+          'data-bg': cfg.bgMode,
+          style: { '--kgm-brand': cfg.accent, background: cfg.bgMode === 'transparent' ? 'transparent' : panelBg },
+        },
         h('style', null, CSS),
         h(
           'div',
@@ -1780,7 +1816,8 @@ window.__ModuleLoader__.load({
         {
           className: 'kgm-mini',
           'data-theme': cfg.theme,
-          style: { background: bg, '--kgm-brand': cfg.accent },
+          'data-bg': cfg.bgMode,
+          style: { background: cfg.bgMode === 'transparent' ? 'transparent' : bg, '--kgm-brand': cfg.accent },
           onClick: () => settings.update({ ui: 'side', sideCollapsed: false }),
           title: '点击打开酷狗侧边栏',
         },
