@@ -615,6 +615,62 @@ window.__ModuleLoader__.load({
         emit()
       }
 
+      const songKey = (s) => (s && (s.hash || s.localPath)) || ''
+
+      const persistQueue = () => {
+        saveStore({
+          queue: state.queue.map((s) => ({
+            hash: s.hash,
+            name: s.name,
+            singer: s.singer,
+            duration: s.duration,
+            localPath: s.localPath,
+            albumId: s.albumId,
+            kgm: s.kgm,
+          })),
+        })
+      }
+
+      /** 用一张歌单替换整个队列；当前歌还在列表里就留在原位。 */
+      function setQueue(list) {
+        const songs = Array.isArray(list) ? list.filter(Boolean) : []
+        const curKey = songKey(state.song)
+        const idx = curKey ? songs.findIndex((s) => songKey(s) === curKey) : -1
+        state.queue = songs
+        if (idx >= 0) {
+          state.index = idx
+          state.song = songs[idx]
+        } else {
+          state.index = -1
+          state.song = null
+          state.playing = false
+          state.lyric = { lines: [], meta: {} }
+          if (audio) {
+            audio.pause()
+            audio.src = ''
+          }
+        }
+        persistQueue()
+        emit()
+        return songs.length
+      }
+
+      /** 把一张歌单追加到现有队列，自动去重。 */
+      function appendQueue(list) {
+        const songs = Array.isArray(list) ? list.filter(Boolean) : []
+        const seen = new Set(state.queue.map(songKey))
+        const added = songs.filter((s) => {
+          const k = songKey(s)
+          if (!k || seen.has(k)) return false
+          seen.add(k)
+          return true
+        })
+        state.queue = [...state.queue, ...added]
+        persistQueue()
+        emit()
+        return added.length
+      }
+
       return {
         state,
         subscribe(fn) {
@@ -627,6 +683,8 @@ window.__ModuleLoader__.load({
         toggle,
         seekTo,
         setVolume,
+        setQueue,
+        appendQueue,
       }
     })()
 
@@ -855,6 +913,13 @@ window.__ModuleLoader__.load({
       const [localFileList, setLocalFileList] = useState([])
       const [activeLocal, setActiveLocal] = useState('recent')
       const [localError, setLocalError] = useState('')
+      const [notice, setNotice] = useState('')
+
+      useEffect(() => {
+        if (!notice) return
+        const timer = setTimeout(() => setNotice(''), 2600)
+        return () => clearTimeout(timer)
+      }, [notice])
 
       const doSearch = useCallback(async () => {
         const q = query.trim()
@@ -1015,6 +1080,15 @@ window.__ModuleLoader__.load({
                   ? h('div', { className: 'kgm-small', style: { padding: '0 14px' }, key: 'cloud' },
                       '云端歌单（歌曲在服务器）：' + localCloud.map((c) => c.name).join(' / '))
                   : null,
+                localSongs.length
+                  ? h(
+                      'div',
+                      { className: 'kgm-row', style: { padding: '4px 14px 6px' }, key: 'ops' },
+                      h('button', { className: 'kgm-go', onClick: () => { player.setQueue(localSongs); setNotice('已替换为 ' + localSongs.length + ' 首') } }, '替换列表'),
+                      h('button', { className: 'kgm-mode-pill', onClick: () => { const n = player.appendQueue(localSongs); setNotice('已加入 ' + n + ' 首') } }, '加入列表'),
+                      notice ? h('span', { className: 'kgm-small', style: { margin: 0 } }, notice) : null,
+                    )
+                  : null,
                 h(
                   'div',
                   { className: 'kgm-list', key: 'songs' },
@@ -1049,7 +1123,18 @@ window.__ModuleLoader__.load({
                   h('button', { className: 'kgm-go', onClick: () => importPlaylist(plInput), disabled: plLoading || !plInput.trim() }, plLoading ? '拉取中' : '导入'),
                 ),
                 onlineList.songs.length
-                  ? h('div', { className: 'kgm-small', style: { padding: '0 14px' }, key: 'plname' }, '《' + onlineList.name + '》 · ' + onlineList.songs.length + ' 首')
+                  ? h(
+                      'div',
+                      { key: 'plname' },
+                      h('div', { className: 'kgm-small', style: { padding: '0 14px', margin: 0 } },
+                        '《' + onlineList.name + '》 · ' + onlineList.songs.length + ' 首' + (notice ? ' · ' + notice : '')),
+                      h(
+                        'div',
+                        { className: 'kgm-row', style: { padding: '6px 14px' } },
+                        h('button', { className: 'kgm-go', onClick: () => { player.setQueue(onlineList.songs); setNotice('已替换为 ' + onlineList.songs.length + ' 首') } }, '替换列表'),
+                        h('button', { className: 'kgm-mode-pill', onClick: () => { const n = player.appendQueue(onlineList.songs); setNotice('已加入 ' + n + ' 首') } }, '加入列表'),
+                      ),
+                    )
                   : null,
                 h(
                   'div',
