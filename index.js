@@ -20,9 +20,18 @@ import { Readable } from 'node:stream'
 import {
   KugouError,
   fetchLyric,
+  fetchPlaylist,
   resolvePlayUrl,
   searchSongs,
 } from './lib/kugou.js'
+import {
+  allowedRoots,
+  decryptAudioFile,
+  extOf,
+  isAllowedPath,
+  isKgmPath,
+  listLocalPlaylists,
+} from './lib/localdb.js'
 
 export const name = 'kugou-music'
 
@@ -91,6 +100,126 @@ async function readBody(req) {
   }
 }
 
+const MIME = {
+  '.mp3': 'audio/mpeg',
+  '.flac': 'audio/flac',
+  '.m4a': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.ogg': 'audio/ogg',
+  '.wav': 'audio/wav',
+  '.ape': 'audio/x-ape',
+  '.wma': 'audio/x-ms-wma',
+}
+
+function mimeOf(ext) {
+  return MIME[String(ext || '').toLowerCase()] || 'application/octet-stream'
+}
+
+/** 扫一遍允许的目录（最多两层），列出可播放的本地音频。 */
+function scanLocalFiles() {
+  const out = []
+  const seen = new Set()
+  const walk = (dir, depth) => {
+    if (depth > 2 || out.length >= 500) return
+    let entries = []
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
+    for (const e of entries) {
+      if (out.length >= 500) return
+      if (e.name.startsWith('.')) continue
+      const full = path.join(dir, e.name)
+      if (e.isDirectory()) {
+        walk(full, depth + 1)
+        continue
+      }
+      if (!e.isFile()) continue
+      const ext = extOf(e.name)
+      if (!ext || seen.has(full)) continue
+      seen.add(full)
+      let size = 0
+      try {
+        size = fs.statSync(full).size
+      } catch {
+        /* ignore */
+      }
+      out.push({ path: full, name: e.name, size, ext, kgm: isKgmPath(full) })
+    }
+  }
+  for (const root of allowedRoots()) walk(root, 0)
+  return out.slice(0, 500)
+}
+
+/** 把本地音频（含酷狗加密格式）送到浏览器。 */
+function serveLocalAudio(req, res, target) {
+  if (!target) {
+    json(res, 400, { ok: false, error: '缺少 path' })
+    return
+  }
+  if (!isAllowedPath(target)) {
+    json(res, 403, { ok: false, error: '目录不在允许范围内' })
+    return
+  }
+  if (!fs.existsSync(target)) {
+    json(res, 404, { ok: false, error: '文件不存在' })
+    return
+  }
+  const ext = extOf(target)
+  if (!ext) {
+    json(res, 415, { ok: false, error: '不支持的音频格式' })
+    return
+  }
+
+  if (isKgmPath(target)) {
+    decryptAudioFile(target)
+      .then(({ data, ext: realExt }) => {
+        res.writeHead(200, {
+          'Content-Type': mimeOf(realExt),
+          'Content-Length': data.length,
+          'Accept-Ranges': 'none',
+          'Cache-Control': 'no-store',
+        })
+        res.end(data)
+      })
+      .catch((err) => {
+        json(res, 500, { ok: false, error: '解密失败：' + (err instanceof Error ? err.message : String(err)) })
+      })
+    return
+  }
+
+  const stat = fs.statSync(target)
+  const range = req.headers.range
+  if (range) {
+    const m = /^bytes=(\d*)-(\d*)$/.exec(range)
+    if (m) {
+      const start = m[1] ? Number(m[1]) : 0
+      let end = m[2] ? Number(m[2]) : stat.size - 1
+      if (start >= stat.size) {
+        res.writeHead(416)
+        res.end()
+        return
+      }
+      end = Math.min(end, stat.size - 1)
+      res.writeHead(206, {
+        'Content-Type': mimeOf(ext),
+        'Content-Length': end - start + 1,
+        'Content-Range': `bytes ${start}-${end}/${stat.size}`,
+        'Accept-Ranges': 'bytes',
+      })
+      fs.createReadStream(target, { start, end }).pipe(res)
+      return
+    }
+  }
+  res.writeHead(200, {
+    'Content-Type': mimeOf(ext),
+    'Content-Length': stat.size,
+    'Accept-Ranges': 'bytes',
+  })
+  fs.createReadStream(target).pipe(res)
+}
+
 /** 挂载路由；返回卸载函数。 */
 export function mountRoutes(webServer, ctx) {
   const dispose = webServer.register({
@@ -112,6 +241,28 @@ export function mountRoutes(webServer, ctx) {
           const size = Math.min(50, Math.max(1, Number(url.searchParams.get('size')) || 20))
           const result = await searchSongs(q, { page, pageSize: size, cookie })
           json(res, 200, { ok: true, ...result })
+          return
+        }
+        if (sub === 'playlist' && req.method === 'GET') {
+          const id = url.searchParams.get('id') || url.searchParams.get('url') || ''
+          const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
+          const size = Math.min(300, Math.max(1, Number(url.searchParams.get('size')) || 100))
+          const result = await fetchPlaylist(id, { page, pageSize: size, cookie })
+          json(res, 200, { ok: true, ...result })
+          return
+        }
+        if (sub === 'local-lists' && req.method === 'GET') {
+          const result = await listLocalPlaylists()
+          json(res, 200, { ok: true, ...result })
+          return
+        }
+        if (sub === 'local-files' && req.method === 'GET') {
+          json(res, 200, { ok: true, roots: allowedRoots(), files: scanLocalFiles() })
+          return
+        }
+        if (sub === 'local-audio' && req.method === 'GET') {
+          const target = url.searchParams.get('path') || ''
+          serveLocalAudio(req, res, target)
           return
         }
         if (sub === 'play' && req.method === 'GET') {
