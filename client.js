@@ -256,7 +256,7 @@ window.__ModuleLoader__.load({
 .kgm-switch input { accent-color: var(--kgm-brand); width: 15px; height: 15px; }
 .kgm-switch-text { font-size: 12px; }
 .kgm-bubble {
-  position: fixed; left: 24px; bottom: 24px; z-index: 60;
+  position: fixed; left: 24px; bottom: 88px; z-index: 60;
   width: 172px; height: 172px; border-radius: 50%;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px;
   padding: 20px; text-align: center;
@@ -1426,7 +1426,6 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { className: 'kgm-row' },
-            h('button', { className: 'kgm-btn', onClick: () => settings.update({ ui: 'dock' }), title: '切换到输入框播放条' }, Icon.search()),
             h('input', { className: 'kgm-volume', type: 'range', min: 0, max: 1, step: 0.01, value: p.volume, onChange: (e) => player.setVolume(Number(e.target.value)), style: { flex: 1, width: 'auto' } }),
           ),
         ),
