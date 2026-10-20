@@ -84,6 +84,10 @@ window.__ModuleLoader__.load({
 .kgm-side-cover.kgm-spin { animation: kgm-spin 7s linear infinite; }
 .kgm-collapsed-body { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0; }
 .kgm-root * { box-sizing: border-box; }
+.kgm-root, .kgm-side, .kgm-bubble, .kgm-mini, .kgm-mini * { user-select: none; -webkit-user-select: none; }
+.kgm-root input, .kgm-root textarea, .kgm-side input, .kgm-side textarea {
+  user-select: text; -webkit-user-select: text;
+}
 .kgm-bar {
   display: flex; align-items: center; gap: 6px; height: 52px; padding: 0 10px;
   border: 1px solid var(--kgm-border); border-radius: 14px;
@@ -336,6 +340,8 @@ window.__ModuleLoader__.load({
         sideCollapsed: false,
         bgOpacity: typeof initial.bgOpacity === 'number' ? initial.bgOpacity : 0.86,
         lyricSidebar: initial.lyricSidebar === true,
+        bubbleLocked: initial.bubbleLocked !== false,
+        bubblePos: initial.bubblePos || null,
       }
       const listeners = new Set()
       return {
@@ -1129,6 +1135,7 @@ window.__ModuleLoader__.load({
 
       useEffect(() => {
         if (!drag) return
+        document.body.style.userSelect = 'none'
         const move = (e) => {
           if (!dragInfo.current) return
           const x = Math.max(0, Math.min(window.innerWidth - 120, e.clientX - dragInfo.current.dx))
@@ -1141,12 +1148,14 @@ window.__ModuleLoader__.load({
             return d
           })
           dragInfo.current = null
+          document.body.style.userSelect = ''
         }
         window.addEventListener('pointermove', move)
         window.addEventListener('pointerup', up)
         return () => {
           window.removeEventListener('pointermove', move)
           window.removeEventListener('pointerup', up)
+          document.body.style.userSelect = ''
         }
       }, [drag])
 
@@ -1265,6 +1274,35 @@ window.__ModuleLoader__.load({
       const profile = useProfile()
       const [tab, setTab] = useState('search')
       const lyricRef = useRef(null)
+      const [bubbleDrag, setBubbleDrag] = useState(null)
+      const bubbleInfo = useRef(null)
+
+      useEffect(() => {
+        if (!bubbleDrag) return
+        document.body.style.userSelect = 'none'
+        const move = (e) => {
+          if (!bubbleInfo.current) return
+          setBubbleDrag({
+            x: Math.max(0, Math.min(window.innerWidth - 60, e.clientX - bubbleInfo.current.dx)),
+            y: Math.max(0, Math.min(window.innerHeight - 60, e.clientY - bubbleInfo.current.dy)),
+          })
+        }
+        const up = () => {
+          setBubbleDrag((d) => {
+            if (d) settings.update({ bubblePos: { x: Math.round(d.x), y: Math.round(d.y) } })
+            return d
+          })
+          bubbleInfo.current = null
+          document.body.style.userSelect = ''
+        }
+        window.addEventListener('pointermove', move)
+        window.addEventListener('pointerup', up)
+        return () => {
+          window.removeEventListener('pointermove', move)
+          window.removeEventListener('pointerup', up)
+          document.body.style.userSelect = ''
+        }
+      }, [bubbleDrag])
 
       if (cfg.ui !== 'side') return null
 
@@ -1277,19 +1315,41 @@ window.__ModuleLoader__.load({
 
       if (cfg.sideCollapsed) {
         const line = currentLine(p.lyric, p.cur)
+        const bpos = bubbleDrag || cfg.bubblePos
+        const bubbleStyle = {
+          background: cfg.theme === 'dark' ? `rgba(26,28,36,${cfg.bgOpacity})` : `rgba(255,255,255,${cfg.bgOpacity})`,
+          '--kgm-brand': cfg.accent,
+          cursor: cfg.bubbleLocked ? 'default' : 'grab',
+        }
+        if (!cfg.bubbleLocked && bpos) {
+          bubbleStyle.left = bpos.x + 'px'
+          bubbleStyle.top = bpos.y + 'px'
+          bubbleStyle.bottom = 'auto'
+        }
+        const startBubble = (e) => {
+          if (cfg.bubbleLocked || e.target.closest('button, input, textarea')) return
+          const rect = e.currentTarget.getBoundingClientRect()
+          bubbleInfo.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top }
+          setBubbleDrag({ x: rect.left, y: rect.top })
+          e.preventDefault()
+        }
         return h(
           'div',
-          {
-            className: 'kgm-bubble',
-            'data-theme': cfg.theme,
-            style: { background: cfg.theme === 'dark' ? `rgba(26,28,36,${cfg.bgOpacity})` : `rgba(255,255,255,${cfg.bgOpacity})`, '--kgm-brand': cfg.accent },
-          },
+          { className: 'kgm-bubble', 'data-theme': cfg.theme, style: bubbleStyle, onPointerDown: startBubble },
           h('style', null, CSS),
           h('div', { className: 'kgm-bubble-lyric' }, line || (p.song ? p.song.name : '♫ 酷狗音乐')),
           h(
             'div',
             { className: 'kgm-bubble-actions' },
             h('button', { className: 'kgm-main', onClick: player.toggle, title: p.playing ? '暂停' : '播放', style: { width: 32, height: 32 } }, p.playing ? Icon.pause() : Icon.play()),
+            h('button', {
+              className: 'kgm-btn' + (cfg.bubbleLocked ? ' kgm-locked' : ''),
+              onClick: () => settings.update({ bubbleLocked: !cfg.bubbleLocked }),
+              title: cfg.bubbleLocked ? '已锁定：点击解锁拖动' : '未锁定：可拖动',
+            }, Icon.lock(cfg.bubbleLocked)),
+            !cfg.bubbleLocked
+              ? h('button', { className: 'kgm-btn', onClick: () => { setBubbleDrag(null); settings.update({ bubblePos: null }) }, title: '复位' }, Icon.reset())
+              : null,
             h('button', { className: 'kgm-btn', onClick: () => settings.update({ sideCollapsed: false }), title: '展开侧边栏' }, Icon.expand()),
           ),
         )
