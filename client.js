@@ -19,6 +19,10 @@ window.__ModuleLoader__.load({
       { name: '石墨', value: '#64748b' },
     ]
 
+    const MODE_LABEL = { loop: '循环', order: '顺序', shuffle: '随机' }
+    const MODE_ORDER = ['loop', 'order', 'shuffle']
+    const nextPlayMode = (mode) => MODE_ORDER[(MODE_ORDER.indexOf(mode) + 1) % MODE_ORDER.length]
+
     const CSS = `
 .kgm-root {
   position: relative; width: 100%; box-sizing: border-box;
@@ -45,7 +49,7 @@ window.__ModuleLoader__.load({
 }
 .kgm-side {
   position: fixed; z-index: 60;
-  top: 10px; bottom: 10px;
+  top: 54px; bottom: 10px;
   left: calc(var(--dsh-windows-sidebar-width, 300px) + 10px);
   width: 344px; display: flex; flex-direction: column; overflow: hidden;
   border: 1px solid var(--kgm-border); border-radius: 16px;
@@ -66,6 +70,20 @@ window.__ModuleLoader__.load({
 .kgm-side.kgm-collapsed { width: 54px; }
 .kgm-side * { box-sizing: border-box; }
 .kgm-side-head { display: flex; align-items: center; gap: 8px; padding: 10px 10px 8px; border-bottom: 1px solid var(--kgm-border); }
+.kgm-side-head button, .kgm-side-tabs button, .kgm-side-player button, .kgm-bubble button, .kgm-mini button {
+  -webkit-app-region: no-drag;
+}
+.kgm-hk-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.kgm-hk-label { font-size: 12px; width: 64px; flex: none; }
+.kgm-hk-btn {
+  flex: 1; height: 28px; border: 1px solid var(--kgm-border); border-radius: 8px;
+  background: transparent; color: var(--kgm-dim); cursor: pointer; font-size: 11px;
+  font-family: ui-monospace, Consolas, monospace;
+}
+.kgm-hk-btn.kgm-on { border-color: var(--kgm-brand); color: var(--kgm-brand); background: color-mix(in srgb, var(--kgm-brand) 10%, transparent); }
+.kgm-modes-mini { display: flex; gap: 6px; }
+.kgm-mode-pill { border: 1px solid var(--kgm-border); background: transparent; color: var(--kgm-dim); border-radius: 8px; padding: 4px 10px; font-size: 11px; cursor: pointer; }
+.kgm-mode-pill.kgm-on { border-color: var(--kgm-brand); color: var(--kgm-brand); background: color-mix(in srgb, var(--kgm-brand) 10%, transparent); }
 .kgm-avatar { width: 34px; height: 34px; border-radius: 50%; flex: none; object-fit: cover; background: var(--kgm-hover); }
 .kgm-avatar-empty { display: flex; align-items: center; justify-content: center; color: var(--kgm-dim); font-size: 15px; }
 .kgm-nick { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -342,6 +360,8 @@ window.__ModuleLoader__.load({
         lyricSidebar: initial.lyricSidebar === true,
         bubbleLocked: initial.bubbleLocked !== false,
         bubblePos: initial.bubblePos || null,
+        playMode: ['loop', 'order', 'shuffle'].includes(initial.playMode) ? initial.playMode : 'loop',
+        hotkeys: Object.assign({ toggle: '', next: '', prev: '' }, initial.hotkeys || {}),
       }
       const listeners = new Set()
       return {
@@ -408,7 +428,7 @@ window.__ModuleLoader__.load({
           state.playing = false
           emit()
         })
-        audio.addEventListener('ended', () => playNext())
+        audio.addEventListener('ended', () => playNext(true))
         audio.addEventListener('error', () => {
           const src = audio.currentSrc || audio.src
           if (!src || src.indexOf('/local-audio') !== -1) {
@@ -529,18 +549,46 @@ window.__ModuleLoader__.load({
         loadLyric(song)
       }
 
-      function playNext() {
+      function pickShuffle() {
+        const q = state.queue
+        if (q.length <= 1) return q.length === 1 ? 0 : -1
+        let i = state.index
+        while (i === state.index) i = Math.floor(Math.random() * q.length)
+        return i
+      }
+
+      function playNext(fromEnded = false) {
         const q = state.queue
         if (!q.length) return
-        const next = (state.index + 1) % q.length
-        playSong(q[next])
+        const mode = settings.state.playMode
+        if (mode === 'shuffle') {
+          const i = pickShuffle()
+          if (i >= 0) playSong(q[i])
+          return
+        }
+        if (mode === 'order') {
+          if (state.index + 1 >= q.length) {
+            if (fromEnded) {
+              state.playing = false
+              emit()
+            }
+            return
+          }
+          playSong(q[state.index + 1])
+          return
+        }
+        playSong(q[(state.index + 1) % q.length])
       }
 
       function playPrev() {
         const q = state.queue
         if (!q.length) return
-        const prev = (state.index - 1 + q.length) % q.length
-        playSong(q[prev])
+        if (settings.state.playMode === 'shuffle') {
+          const i = pickShuffle()
+          if (i >= 0) playSong(q[i])
+          return
+        }
+        playSong(q[(state.index - 1 + q.length) % q.length])
       }
 
       function toggle() {
@@ -581,6 +629,57 @@ window.__ModuleLoader__.load({
         setVolume,
       }
     })()
+
+    /* ---------------- 全局热键 ---------------- */
+    function normalizeKey(e) {
+      const k = e.key
+      if (!k) return ''
+      if (k === ' ') return 'Space'
+      if (k.length === 1) return k.toUpperCase()
+      return k
+    }
+
+    function comboMatches(e, combo) {
+      const parts = String(combo || '').split('+').map((s) => s.trim()).filter(Boolean)
+      if (!parts.length) return false
+      const key = parts[parts.length - 1]
+      const mods = parts.slice(0, -1)
+      if (mods.includes('Ctrl') !== Boolean(e.ctrlKey)) return false
+      if (mods.includes('Alt') !== Boolean(e.altKey)) return false
+      if (mods.includes('Shift') !== Boolean(e.shiftKey)) return false
+      if (mods.includes('Meta') !== Boolean(e.metaKey)) return false
+      return normalizeKey(e) === key
+    }
+
+    let hotkeyRecording = false
+
+    function bindHotkeys() {
+      window.addEventListener(
+        'keydown',
+        (e) => {
+          if (hotkeyRecording) return
+          const t = e.target
+          if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+          const hk = settings.state.hotkeys || {}
+          const acts = [
+            ['toggle', () => player.toggle()],
+            ['next', () => player.next()],
+            ['prev', () => player.prev()],
+          ]
+          for (const [name, run] of acts) {
+            if (hk[name] && comboMatches(e, hk[name])) {
+              e.preventDefault()
+              e.stopPropagation()
+              run()
+              return
+            }
+          }
+        },
+        true,
+      )
+    }
+
+    if (typeof window !== 'undefined') bindHotkeys()
 
     function usePlayer() {
       const [, force] = useState(0)
@@ -642,6 +741,54 @@ window.__ModuleLoader__.load({
           : song.free === false
             ? h('span', { className: 'kgm-tag kgm-tag-vip' }, 'VIP')
             : h('span', { className: 'kgm-tag' }, '免费'),
+      )
+    }
+
+    /** 热键录制按钮。 */
+    function HotkeyInput({ value, onChange }) {
+      const [recording, setRecording] = useState(false)
+      useEffect(() => {
+        hotkeyRecording = recording
+        if (!recording) return
+        const onKey = (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          if (e.key === 'Escape') {
+            setRecording(false)
+            return
+          }
+          if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) return
+          const parts = []
+          if (e.ctrlKey) parts.push('Ctrl')
+          if (e.altKey) parts.push('Alt')
+          if (e.shiftKey) parts.push('Shift')
+          if (e.metaKey) parts.push('Meta')
+          const key = normalizeKey(e)
+          if (!key) return
+          if (
+            !parts.length &&
+            !/^(F\d{1,2}|Arrow\w+|Space|Enter|Escape|Delete|Home|End|PageUp|PageDown)$/.test(key)
+          ) {
+            return
+          }
+          onChange([...parts, key].join('+'))
+          setRecording(false)
+        }
+        window.addEventListener('keydown', onKey, true)
+        return () => {
+          hotkeyRecording = false
+          window.removeEventListener('keydown', onKey, true)
+        }
+      }, [recording, onChange])
+      return h(
+        'div',
+        { style: { display: 'flex', gap: 6, flex: 1, alignItems: 'center' } },
+        h(
+          'button',
+          { className: 'kgm-hk-btn' + (recording ? ' kgm-on' : ''), onClick: () => setRecording(true) },
+          recording ? '按下按键…（Esc 取消）' : value || '未设置',
+        ),
+        value ? h('button', { className: 'kgm-btn', onClick: () => onChange(''), title: '清除' }, '×') : null,
       )
     }
 
@@ -977,6 +1124,43 @@ window.__ModuleLoader__.load({
             h('div', { className: 'kgm-mode-desc' }, '固定左侧，带歌词面板'),
           ),
         ),
+        h('div', { className: 'kgm-section-title' }, '播放模式'),
+        h(
+          'div',
+          { className: 'kgm-modes-mini', style: { marginBottom: 12 } },
+          h('button', { className: 'kgm-mode-pill' + (cfg.playMode === 'loop' ? ' kgm-on' : ''), onClick: () => settings.update({ playMode: 'loop' }) }, '列表循环'),
+          h('button', { className: 'kgm-mode-pill' + (cfg.playMode === 'order' ? ' kgm-on' : ''), onClick: () => settings.update({ playMode: 'order' }) }, '顺序播放'),
+          h('button', { className: 'kgm-mode-pill' + (cfg.playMode === 'shuffle' ? ' kgm-on' : ''), onClick: () => settings.update({ playMode: 'shuffle' }) }, '随机播放'),
+        ),
+        h('div', { className: 'kgm-section-title' }, '快捷键'),
+        h(
+          'div',
+          { className: 'kgm-hk-row' },
+          h('span', { className: 'kgm-hk-label' }, '播放/暂停'),
+          h(HotkeyInput, {
+            value: cfg.hotkeys.toggle,
+            onChange: (v) => settings.update({ hotkeys: { ...cfg.hotkeys, toggle: v } }),
+          }),
+        ),
+        h(
+          'div',
+          { className: 'kgm-hk-row' },
+          h('span', { className: 'kgm-hk-label' }, '上一首'),
+          h(HotkeyInput, {
+            value: cfg.hotkeys.prev,
+            onChange: (v) => settings.update({ hotkeys: { ...cfg.hotkeys, prev: v } }),
+          }),
+        ),
+        h(
+          'div',
+          { className: 'kgm-hk-row' },
+          h('span', { className: 'kgm-hk-label' }, '下一首'),
+          h(HotkeyInput, {
+            value: cfg.hotkeys.next,
+            onChange: (v) => settings.update({ hotkeys: { ...cfg.hotkeys, next: v } }),
+          }),
+        ),
+        h('div', { className: 'kgm-small' }, '点按钮后直接按键；单键只支持 F1-F12 / 方向键 / 空格等，其余请用组合键。'),
         h('div', { className: 'kgm-section-title' }, '侧边栏背景透明度'),
         h(
           'div',
@@ -1251,6 +1435,16 @@ window.__ModuleLoader__.load({
           h('button', { className: 'kgm-btn', onClick: player.prev, disabled: !p.queue.length, title: '上一首' }, Icon.prev()),
           h('button', { className: 'kgm-main', onClick: player.toggle, title: p.playing ? '暂停' : '播放' }, p.playing ? Icon.pause() : Icon.play()),
           h('button', { className: 'kgm-btn', onClick: player.next, disabled: !p.queue.length, title: '下一首' }, Icon.next()),
+          h(
+            'button',
+            {
+              className: 'kgm-mode-pill' + (cfg.playMode !== 'loop' ? ' kgm-on' : ''),
+              onClick: () => settings.update({ playMode: nextPlayMode(cfg.playMode) }),
+              title: '播放模式：' + MODE_LABEL[cfg.playMode] + '（点击切换）',
+              style: { height: 24 },
+            },
+            MODE_LABEL[cfg.playMode],
+          ),
           h('input', { className: 'kgm-volume', type: 'range', min: 0, max: 1, step: 0.01, value: p.volume, onChange: (e) => player.setVolume(Number(e.target.value)), title: '音量' }),
           h('button', {
             className: 'kgm-btn' + (cfg.dockLocked ? ' kgm-locked' : ''),
@@ -1409,6 +1603,16 @@ window.__ModuleLoader__.load({
             h('button', { className: 'kgm-btn', onClick: player.prev, disabled: !p.queue.length, title: '上一首' }, Icon.prev()),
             h('button', { className: 'kgm-main', onClick: player.toggle, title: p.playing ? '暂停' : '播放' }, p.playing ? Icon.pause() : Icon.play()),
             h('button', { className: 'kgm-btn', onClick: player.next, disabled: !p.queue.length, title: '下一首' }, Icon.next()),
+            h(
+              'button',
+              {
+                className: 'kgm-mode-pill' + (cfg.playMode !== 'loop' ? ' kgm-on' : ''),
+                onClick: () => settings.update({ playMode: nextPlayMode(cfg.playMode) }),
+                title: '播放模式：' + MODE_LABEL[cfg.playMode],
+                style: { height: 22 },
+              },
+              MODE_LABEL[cfg.playMode],
+            ),
           ),
           h(
             'div',
