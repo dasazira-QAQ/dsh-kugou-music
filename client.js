@@ -57,6 +57,7 @@ window.__ModuleLoader__.load({
   -webkit-backdrop-filter: blur(24px) saturate(1.7); backdrop-filter: blur(24px) saturate(1.7);
   box-shadow: var(--kgm-shadow); pointer-events: auto;
   font-size: 13px; line-height: 1.4;
+  animation: kgm-side-in .24s cubic-bezier(.2, .8, .25, 1);
   --kgm-bg: rgba(255,255,255,.74);
   --kgm-fg: #1b1f27;
   --kgm-dim: rgba(27,31,39,.58);
@@ -145,6 +146,8 @@ window.__ModuleLoader__.load({
 .kgm-cover.kgm-spin::after { content: ''; position: absolute; inset: 11px; border-radius: 50%; background: rgba(255,255,255,.9); }
 .kgm-cover.kgm-spin { animation: kgm-spin 7s linear infinite; }
 @keyframes kgm-spin { to { transform: rotate(360deg); } }
+@keyframes kgm-side-in { from { opacity: 0; transform: translateX(-14px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes kgm-bubble-in { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
 .kgm-meta { min-width: 0; max-width: 26%; display: flex; flex-direction: column; line-height: 1.3; }
 .kgm-title { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kgm-singer { font-size: 11px; color: var(--kgm-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -281,6 +284,8 @@ window.__ModuleLoader__.load({
   border: 1px solid var(--kgm-border); color: var(--kgm-fg);
   -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6);
   box-shadow: var(--kgm-shadow); pointer-events: auto; font-size: 13px;
+  animation: kgm-bubble-in .24s cubic-bezier(.2, .8, .25, 1);
+  transition: box-shadow .2s, background .2s;
   --kgm-bg: rgba(255,255,255,.74); --kgm-fg: #1b1f27; --kgm-dim: rgba(27,31,39,.58);
   --kgm-border: rgba(20,26,40,.10); --kgm-hover: rgba(20,26,40,.07);
   --kgm-shadow: 0 10px 30px rgba(20,26,40,.14); --kgm-brand: #3f6bff;
@@ -355,7 +360,8 @@ window.__ModuleLoader__.load({
         ui: initial.ui === 'side' ? 'side' : 'dock',
         dockLocked: initial.dockLocked !== false,
         dockPos: initial.dockPos || null,
-        sideCollapsed: false,
+        // 每次打开 DSH 都从收起的圆形气泡开始
+        sideCollapsed: true,
         bgOpacity: typeof initial.bgOpacity === 'number' ? initial.bgOpacity : 0.86,
         lyricSidebar: initial.lyricSidebar === true,
         bubbleLocked: initial.bubbleLocked !== false,
@@ -372,7 +378,9 @@ window.__ModuleLoader__.load({
         },
         update(patch) {
           Object.assign(state, patch)
-          saveStore(patch)
+          // 收起状态不持久化：每次打开 DSH 都从收起的气泡开始
+          const { sideCollapsed, ...persist } = patch
+          saveStore(persist)
           listeners.forEach((fn) => fn())
         },
       }
@@ -411,6 +419,7 @@ window.__ModuleLoader__.load({
       let audio = null
       let proxyTried = ''
       let playSeq = 0
+      const history = []
 
       const emit = () => listeners.forEach((fn) => fn())
 
@@ -577,6 +586,9 @@ window.__ModuleLoader__.load({
         if (!q.length) return
         const mode = settings.state.playMode
         if (mode === 'shuffle') {
+          // 记下当前这首，上一首才能真的回到它
+          if (state.song) history.push(songKey(state.song))
+          if (history.length > 200) history.shift()
           const i = pickShuffle()
           if (i >= 0) playSong(q[i])
           return
@@ -599,6 +611,15 @@ window.__ModuleLoader__.load({
         const q = state.queue
         if (!q.length) return
         if (settings.state.playMode === 'shuffle') {
+          // 优先回到真正播过的那一首
+          while (history.length) {
+            const key = history.pop()
+            const idx = q.findIndex((s) => songKey(s) === key)
+            if (idx >= 0) {
+              playSong(q[idx])
+              return
+            }
+          }
           const i = pickShuffle()
           if (i >= 0) playSong(q[i])
           return
