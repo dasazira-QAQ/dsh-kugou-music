@@ -356,9 +356,11 @@ window.__ModuleLoader__.load({
 .kgm-bubble-lyric-inner {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: 2px; font-size: 12px; line-height: 1.5;
+  gap: 1px; line-height: 1.45;
 }
-.kgm-bubble-trans { font-size: 10.5px; opacity: .72; line-height: 1.4; }
+.kgm-bubble-line { font-size: var(--kgm-bubble-fs, 12px); opacity: .46; transition: opacity .2s; }
+.kgm-bubble-line.kgm-active { opacity: 1; font-weight: 600; color: var(--kgm-brand); }
+.kgm-bubble-trans { font-size: calc(var(--kgm-bubble-fs, 12px) - 1.5px); opacity: .7; line-height: 1.35; font-weight: 400; color: var(--kgm-fg); }
 .kgm-bubble-actions { display: flex; gap: 6px; align-items: center; }
 .kgm-mini {
   position: fixed; left: 8px; bottom: 62px; z-index: 59;
@@ -433,6 +435,8 @@ window.__ModuleLoader__.load({
         bgMode: initial.bgMode === 'transparent' ? 'transparent' : 'glass',
         showTrans: initial.showTrans === true,
         profileVersion: 0,
+        bubbleLines: Math.min(4, Math.max(1, Number(initial.bubbleLines) || 2)),
+        bubbleFontSize: Math.min(16, Math.max(10, Number(initial.bubbleFontSize) || 12)),
         lyricSidebar: initial.lyricSidebar === true,
         bubbleLocked: initial.bubbleLocked !== false,
         bubblePos: initial.bubblePos || null,
@@ -997,6 +1001,31 @@ window.__ModuleLoader__.load({
       return lyric.lines[idx].trans || ''
     }
 
+    /** 气泡里显示的 N 行歌词（以当前行为中心，最多 4 行）。 */
+    function bubbleLinesOf(lyric, cur, count) {
+      const n = Math.max(1, Math.min(4, Number(count) || 1))
+      if (!lyric.lines.length) return []
+      const ms = cur * 1000
+      let idx = -1
+      for (let i = 0; i < lyric.lines.length; i++) {
+        if (lyric.lines[i].start <= ms) idx = i
+        else break
+      }
+      if (idx < 0) idx = 0
+      const half = Math.floor(n / 2)
+      let start = Math.max(0, idx - half)
+      const end = Math.min(lyric.lines.length, start + n)
+      start = Math.max(0, end - n)
+      const out = []
+      for (let i = start; i < end; i++) {
+        out.push({
+          text: lyric.lines[i].words.map((w) => w.text).join(''),
+          active: i === idx,
+        })
+      }
+      return out
+    }
+
     function LyricView({ lyric, cur, boxRef, showTrans }) {
       const lineIdx = useMemo(() => {
         const ms = cur * 1000
@@ -1411,6 +1440,35 @@ window.__ModuleLoader__.load({
           }),
           h('span', { className: 'kgm-opacity-val' }, Math.round(cfg.bgOpacity * 100) + '%'),
         ),
+        h('div', { className: 'kgm-section-title' }, '气泡歌词'),
+        h(
+          'div',
+          { className: 'kgm-opacity', style: { marginBottom: 8 } },
+          h('span', { className: 'kgm-small', style: { margin: 0, width: 40, flex: 'none' } }, '行数'),
+          h('input', {
+            type: 'range',
+            min: 1,
+            max: 4,
+            step: 1,
+            value: cfg.bubbleLines,
+            onChange: (e) => settings.update({ bubbleLines: Number(e.target.value) }),
+          }),
+          h('span', { className: 'kgm-opacity-val' }, cfg.bubbleLines + ' 行'),
+        ),
+        h(
+          'div',
+          { className: 'kgm-opacity', style: { marginBottom: 12 } },
+          h('span', { className: 'kgm-small', style: { margin: 0, width: 40, flex: 'none' } }, '字号'),
+          h('input', {
+            type: 'range',
+            min: 10,
+            max: 16,
+            step: 1,
+            value: cfg.bubbleFontSize,
+            onChange: (e) => settings.update({ bubbleFontSize: Number(e.target.value) }),
+          }),
+          h('span', { className: 'kgm-opacity-val' }, cfg.bubbleFontSize + 'px'),
+        ),
         h(
           'label',
           { className: 'kgm-switch', style: { marginBottom: 12 } },
@@ -1795,9 +1853,16 @@ window.__ModuleLoader__.load({
           e.preventDefault()
         }
         const bubbleTrans = cfg.showTrans ? currentTrans(p.lyric, p.cur) : ''
+        const bubbleList = bubbleLinesOf(p.lyric, p.cur, cfg.bubbleLines)
         return h(
           'div',
-          { className: 'kgm-bubble', 'data-theme': cfg.theme, 'data-bg': cfg.bgMode, style: bubbleStyle, onPointerDown: startBubble },
+          {
+            className: 'kgm-bubble',
+            'data-theme': cfg.theme,
+            'data-bg': cfg.bgMode,
+            style: { ...bubbleStyle, '--kgm-bubble-fs': cfg.bubbleFontSize + 'px' },
+            onPointerDown: startBubble,
+          },
           h('style', null, CSS),
           h(
             'div',
@@ -1805,8 +1870,16 @@ window.__ModuleLoader__.load({
             h(
               'div',
               { className: 'kgm-bubble-lyric-inner' },
-              h('div', null, line || (p.song ? p.song.name : '♫ 酷狗音乐')),
-              bubbleTrans ? h('div', { className: 'kgm-bubble-trans' }, bubbleTrans) : null,
+              bubbleList.length
+                ? bubbleList.map((l, i) =>
+                    h(
+                      'div',
+                      { key: i, className: 'kgm-bubble-line' + (l.active ? ' kgm-active' : '') },
+                      l.text,
+                      l.active && bubbleTrans ? h('div', { className: 'kgm-bubble-trans' }, bubbleTrans) : null,
+                    ),
+                  )
+                : h('div', null, p.song ? p.song.name : '♫ 酷狗音乐'),
             ),
           ),
           h(
