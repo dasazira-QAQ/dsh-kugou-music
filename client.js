@@ -340,8 +340,8 @@ window.__ModuleLoader__.load({
   border: 1px solid var(--kgm-border); color: var(--kgm-fg);
   -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6);
   box-shadow: var(--kgm-shadow); pointer-events: auto; font-size: 13px;
-  animation: kgm-bubble-in .24s cubic-bezier(.2, .8, .25, 1);
-  transition: box-shadow .2s, background .2s;
+  animation: kgm-bubble-in .24s cubic-bezier(.2, .8, .25, 1) both;
+  transition: box-shadow .2s;
   --kgm-bg: rgba(255,255,255,.74); --kgm-fg: #1b1f27; --kgm-dim: rgba(27,31,39,.58);
   --kgm-border: rgba(20,26,40,.10); --kgm-hover: rgba(20,26,40,.07);
   --kgm-shadow: 0 10px 30px rgba(20,26,40,.14); --kgm-brand: #3f6bff;
@@ -351,9 +351,12 @@ window.__ModuleLoader__.load({
   --kgm-hover: rgba(255,255,255,.10); --kgm-shadow: 0 14px 36px rgba(0,0,0,.46);
 }
 .kgm-bubble-lyric {
-  flex: 1; min-height: 0; width: 100%; overflow: hidden;
+  position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden;
+}
+.kgm-bubble-lyric-inner {
+  position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  font-size: 12px; line-height: 1.5; gap: 2px;
+  gap: 2px; font-size: 12px; line-height: 1.5;
 }
 .kgm-bubble-trans { font-size: 10.5px; opacity: .72; line-height: 1.4; }
 .kgm-bubble-actions { display: flex; gap: 6px; align-items: center; }
@@ -395,9 +398,15 @@ window.__ModuleLoader__.load({
       }
     }
 
-    async function api(path, init) {
-      const res = await fetch(path, init)
-      return res.json()
+    async function api(path, init, timeoutMs = 15000) {
+      const ctrl = new AbortController()
+      const timer = setTimeout(() => ctrl.abort(), timeoutMs)
+      try {
+        const res = await fetch(path, init ? { ...init, signal: ctrl.signal } : { signal: ctrl.signal })
+        return await res.json()
+      } finally {
+        clearTimeout(timer)
+      }
     }
 
     function fmt(sec) {
@@ -423,6 +432,7 @@ window.__ModuleLoader__.load({
         bgOpacity: typeof initial.bgOpacity === 'number' ? initial.bgOpacity : 0.86,
         bgMode: initial.bgMode === 'transparent' ? 'transparent' : 'glass',
         showTrans: initial.showTrans === true,
+        profileVersion: 0,
         lyricSidebar: initial.lyricSidebar === true,
         bubbleLocked: initial.bubbleLocked !== false,
         bubblePos: initial.bubblePos || null,
@@ -538,13 +548,14 @@ window.__ModuleLoader__.load({
         return a.hash && b.hash && a.hash === b.hash
       }
 
-      async function loadLyric(song) {
+      async function loadLyric(song, seq) {
         try {
           let hash = song.hash
           let duration = song.duration || 0
           if (!hash && song.localPath) {
             const kw = ((song.singer ? song.singer + ' ' : '') + song.name).trim()
             const sr = await api(API + '/search?q=' + encodeURIComponent(kw) + '&size=1')
+            if (seq !== undefined && seq !== playSeq) return
             const hit = sr && sr.ok && sr.songs && sr.songs[0]
             if (!hit) return
             hash = hit.hash
@@ -552,6 +563,8 @@ window.__ModuleLoader__.load({
           }
           if (!hash) return
           const r = await api(API + '/lyric?hash=' + encodeURIComponent(hash) + '&duration=' + duration)
+          // 切歌后旧请求晚到：丢掉，避免歌词串台
+          if (seq !== undefined && seq !== playSeq) return
           if (r && r.ok) {
             state.lyric = { lines: r.lines || [], meta: r.meta || {} }
             emit()
@@ -591,7 +604,7 @@ window.__ModuleLoader__.load({
             state.error = '本地文件播放失败：' + (e && e.message ? e.message : String(e))
             emit()
           }
-          loadLyric(song)
+          loadLyric(song, seq)
           return
         }
 
@@ -630,7 +643,7 @@ window.__ModuleLoader__.load({
           state.error = '浏览器拒绝播放：' + (e && e.message ? e.message : String(e))
           emit()
         }
-        loadLyric(song)
+        loadLyric(song, seq)
       }
 
       function pickShuffle() {
@@ -684,7 +697,9 @@ window.__ModuleLoader__.load({
           if (i >= 0) playSong(q[i])
           return
         }
-        playSong(q[(state.index - 1 + q.length) % q.length])
+        // index=-1（刚替换队列还没播）时，上一首落在最后
+        const from = state.index < 0 ? q.length : state.index
+        playSong(q[(from - 1 + q.length) % q.length])
       }
 
       function toggle() {
@@ -854,6 +869,7 @@ window.__ModuleLoader__.load({
 
     /* 账号资料 */
     function useProfile() {
+      const cfg = useSettings()
       const [profile, setProfile] = useState({ loggedIn: false, nick: '', userid: '', avatar: '' })
       useEffect(() => {
         let alive = true
@@ -865,7 +881,7 @@ window.__ModuleLoader__.load({
         return () => {
           alive = false
         }
-      }, [])
+      }, [cfg.profileVersion])
       return profile
     }
 
@@ -1309,6 +1325,8 @@ window.__ModuleLoader__.load({
           })
           setHasCookie(Boolean(r && r.hasCookie))
           setDraft('')
+          // 通知所有用到账号资料的组件重新拉一次（头像/昵称/会员状态）
+          settings.update({ profileVersion: (settings.state.profileVersion || 0) + 1 })
           onCookieSaved && onCookieSaved()
         } catch {
           setErr('保存 Cookie 失败')
@@ -1496,6 +1514,7 @@ window.__ModuleLoader__.load({
             try {
               await api(API + '/cookie', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cookie: '' }) })
               setHasCookie(false)
+              settings.update({ profileVersion: (settings.state.profileVersion || 0) + 1 })
             } catch { /* ignore */ }
           }, title: '清除' }, '清除'),
           h('span', { className: 'kgm-small', style: { margin: 0, marginLeft: 'auto' } }, '只存本机 ~/.dsh'),
@@ -1594,11 +1613,10 @@ window.__ModuleLoader__.load({
         player.seekTo((e.clientX - rect.left) / rect.width)
       }
 
-      return h(
+      const inner = h(
         'div',
         { className: wrapClass, 'data-theme': cfg.theme, 'data-bg': cfg.bgMode, style: { ...wrapStyle, '--kgm-brand': cfg.accent } },
         h('style', null, CSS),
-        floating ? h('div', { className: 'kgm-dock-spacer' }) : null,
         expanded
           ? h(
               'div',
@@ -1700,6 +1718,10 @@ window.__ModuleLoader__.load({
           h('button', { className: 'kgm-btn', onClick: () => { setExpanded(true); setTab('search') }, title: '搜歌' }, Icon.search()),
         ),
       )
+
+      if (!floating) return inner
+      // 浮动时 inner 是 fixed，会脱离文档流；外面补一个等高的占位，避免输入框位置跳动
+      return h('div', { style: { height: 52, position: 'relative' } }, inner)
     }
 
     /* ------------------------------------------------------------------ */
@@ -1772,6 +1794,7 @@ window.__ModuleLoader__.load({
           setBubbleDrag({ x: rect.left, y: rect.top })
           e.preventDefault()
         }
+        const bubbleTrans = cfg.showTrans ? currentTrans(p.lyric, p.cur) : ''
         return h(
           'div',
           { className: 'kgm-bubble', 'data-theme': cfg.theme, 'data-bg': cfg.bgMode, style: bubbleStyle, onPointerDown: startBubble },
@@ -1779,10 +1802,12 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { className: 'kgm-bubble-lyric' },
-            h('div', null, line || (p.song ? p.song.name : '♫ 酷狗音乐')),
-            cfg.showTrans && currentTrans(p.lyric, p.cur)
-              ? h('div', { className: 'kgm-bubble-trans' }, currentTrans(p.lyric, p.cur))
-              : null,
+            h(
+              'div',
+              { className: 'kgm-bubble-lyric-inner' },
+              h('div', null, line || (p.song ? p.song.name : '♫ 酷狗音乐')),
+              bubbleTrans ? h('div', { className: 'kgm-bubble-trans' }, bubbleTrans) : null,
+            ),
           ),
           h(
             'div',
