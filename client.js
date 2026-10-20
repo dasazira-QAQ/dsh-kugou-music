@@ -8,7 +8,6 @@ window.__ModuleLoader__.load({
     const API = '/kugou-music-api'
     const STORE_KEY = 'dsh-kugou-music:v1'
 
-    /* 预设主题色 */
     const ACCENTS = [
       { name: '酷狗蓝', value: '#3f6bff' },
       { name: '青', value: '#06b6d4' },
@@ -34,7 +33,7 @@ window.__ModuleLoader__.load({
   --kgm-panel-bg: rgba(255,255,255,.86);
   --kgm-brand: #3f6bff;
 }
-.kgm-root[data-theme="dark"] {
+.kgm-root[data-theme="dark"], .kgm-side[data-theme="dark"] {
   --kgm-bg: rgba(24,26,33,.70);
   --kgm-fg: #eef1f7;
   --kgm-dim: rgba(238,241,247,.56);
@@ -44,6 +43,46 @@ window.__ModuleLoader__.load({
   --kgm-shadow: 0 14px 36px rgba(0,0,0,.46), 0 1px 2px rgba(0,0,0,.3);
   --kgm-panel-bg: rgba(26,28,36,.90);
 }
+.kgm-side {
+  position: fixed; z-index: 60;
+  top: 10px; bottom: 10px;
+  left: calc(var(--dsh-windows-sidebar-width, 300px) + 10px);
+  width: 344px; display: flex; flex-direction: column; overflow: hidden;
+  border: 1px solid var(--kgm-border); border-radius: 16px;
+  background: var(--kgm-panel-bg); color: var(--kgm-fg);
+  -webkit-backdrop-filter: blur(24px) saturate(1.7); backdrop-filter: blur(24px) saturate(1.7);
+  box-shadow: var(--kgm-shadow); pointer-events: auto;
+  font-size: 13px; line-height: 1.4;
+  --kgm-bg: rgba(255,255,255,.74);
+  --kgm-fg: #1b1f27;
+  --kgm-dim: rgba(27,31,39,.58);
+  --kgm-border: rgba(20,26,40,.10);
+  --kgm-hover: rgba(20,26,40,.07);
+  --kgm-track: rgba(20,26,40,.14);
+  --kgm-shadow: 0 10px 30px rgba(20,26,40,.14), 0 1px 2px rgba(20,26,40,.06);
+  --kgm-panel-bg: rgba(255,255,255,.86);
+  --kgm-brand: #3f6bff;
+}
+.kgm-side.kgm-collapsed { width: 54px; }
+.kgm-side * { box-sizing: border-box; }
+.kgm-side-head { display: flex; align-items: center; gap: 8px; padding: 10px 10px 8px; border-bottom: 1px solid var(--kgm-border); }
+.kgm-avatar { width: 34px; height: 34px; border-radius: 50%; flex: none; object-fit: cover; background: var(--kgm-hover); }
+.kgm-avatar-empty { display: flex; align-items: center; justify-content: center; color: var(--kgm-dim); font-size: 15px; }
+.kgm-nick { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kgm-uid { font-size: 10px; color: var(--kgm-dim); }
+.kgm-side-tabs { display: flex; gap: 2px; padding: 8px 8px 6px; }
+.kgm-side-body { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.kgm-side-lyric { height: 190px; border-top: 1px solid var(--kgm-border); border-bottom: 1px solid var(--kgm-border); display: flex; flex-direction: column; }
+.kgm-side-player { padding: 8px 10px 10px; }
+.kgm-side-row { display: flex; align-items: center; gap: 6px; }
+.kgm-side-cover {
+  width: 40px; height: 40px; border-radius: 10px; flex: none; position: relative; overflow: hidden;
+  background: var(--kgm-brand); color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 15px; box-shadow: 0 2px 8px color-mix(in srgb, var(--kgm-brand) 40%, transparent);
+}
+.kgm-side-cover.kgm-spin::after { content: ''; position: absolute; inset: 14px; border-radius: 50%; background: rgba(255,255,255,.9); }
+.kgm-side-cover.kgm-spin { animation: kgm-spin 7s linear infinite; }
+.kgm-collapsed-body { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0; }
 .kgm-root * { box-sizing: border-box; }
 .kgm-bar {
   display: flex; align-items: center; gap: 6px; height: 52px; padding: 0 10px;
@@ -52,6 +91,10 @@ window.__ModuleLoader__.load({
   -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6);
   box-shadow: var(--kgm-shadow);
 }
+.kgm-floating { position: fixed; z-index: 60; width: min(680px, 92vw); cursor: grab; }
+.kgm-floating:active { cursor: grabbing; }
+.kgm-floating .kgm-bar { box-shadow: 0 16px 40px rgba(0,0,0,.28); }
+.kgm-dock-spacer { height: 52px; }
 .kgm-btn {
   display: inline-flex; align-items: center; justify-content: center;
   width: 30px; height: 30px; padding: 0; border: 0; border-radius: 9px;
@@ -62,6 +105,7 @@ window.__ModuleLoader__.load({
 .kgm-btn:active { transform: scale(.94); }
 .kgm-btn:disabled { opacity: .28; cursor: default; background: transparent; }
 .kgm-btn svg { width: 16px; height: 16px; display: block; }
+.kgm-btn.kgm-locked { opacity: 1; background: color-mix(in srgb, var(--kgm-brand) 16%, transparent); color: var(--kgm-brand); }
 .kgm-main {
   width: 34px; height: 34px; border-radius: 50%; flex: none; border: 0; padding: 0;
   display: flex; align-items: center; justify-content: center; cursor: pointer;
@@ -73,17 +117,13 @@ window.__ModuleLoader__.load({
 .kgm-cover {
   width: 34px; height: 34px; border-radius: 50%; flex: none;
   display: flex; align-items: center; justify-content: center;
-  background: var(--kgm-brand);
-  color: #fff; font-size: 14px; overflow: hidden; position: relative;
+  background: var(--kgm-brand); color: #fff; font-size: 14px; overflow: hidden; position: relative;
   box-shadow: 0 2px 8px color-mix(in srgb, var(--kgm-brand) 40%, transparent), inset 0 0 0 3px rgba(255,255,255,.18);
 }
-.kgm-cover.kgm-spin::after {
-  content: ''; position: absolute; inset: 11px; border-radius: 50%;
-  background: rgba(255,255,255,.9);
-}
+.kgm-cover.kgm-spin::after { content: ''; position: absolute; inset: 11px; border-radius: 50%; background: rgba(255,255,255,.9); }
 .kgm-cover.kgm-spin { animation: kgm-spin 7s linear infinite; }
 @keyframes kgm-spin { to { transform: rotate(360deg); } }
-.kgm-meta { min-width: 0; max-width: 28%; display: flex; flex-direction: column; line-height: 1.3; }
+.kgm-meta { min-width: 0; max-width: 26%; display: flex; flex-direction: column; line-height: 1.3; }
 .kgm-title { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kgm-singer { font-size: 11px; color: var(--kgm-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kgm-empty-meta { color: var(--kgm-dim); font-size: 12px; }
@@ -110,6 +150,7 @@ window.__ModuleLoader__.load({
   -webkit-backdrop-filter: blur(24px) saturate(1.7); backdrop-filter: blur(24px) saturate(1.7);
   box-shadow: var(--kgm-shadow); animation: kgm-in .18s ease-out;
 }
+.kgm-floating .kgm-panel { bottom: calc(100% + 10px); }
 @keyframes kgm-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .kgm-left { width: 56%; display: flex; flex-direction: column; border-right: 1px solid var(--kgm-border); min-width: 0; }
 .kgm-right { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -131,7 +172,6 @@ window.__ModuleLoader__.load({
 .kgm-go {
   height: 32px; padding: 0 14px; border: 0; border-radius: 9px; cursor: pointer;
   background: var(--kgm-brand); color: #fff; font-size: 12px; font-weight: 600;
-  transition: filter .16s;
 }
 .kgm-go:hover { filter: brightness(1.08); }
 .kgm-go:disabled { opacity: .45; cursor: default; }
@@ -149,22 +189,22 @@ window.__ModuleLoader__.load({
 .kgm-tag { flex: none; font-size: 10px; padding: 1px 5px; border-radius: 4px; background: rgba(52,168,83,.16); color: #2e9e4f; }
 .kgm-tag-vip { background: rgba(220,120,40,.16); color: #c26a20; }
 .kgm-tag-local { background: color-mix(in srgb, var(--kgm-brand) 16%, transparent); color: var(--kgm-brand); }
-.kgm-root[data-theme="dark"] .kgm-tag { color: #6ee09a; }
-.kgm-root[data-theme="dark"] .kgm-tag-vip { color: #ffb066; }
+.kgm-root[data-theme="dark"] .kgm-tag, .kgm-side[data-theme="dark"] .kgm-tag { color: #6ee09a; }
+.kgm-root[data-theme="dark"] .kgm-tag-vip, .kgm-side[data-theme="dark"] .kgm-tag-vip { color: #ffb066; }
 .kgm-hint { padding: 16px 14px; font-size: 12px; color: var(--kgm-dim); line-height: 1.65; }
-.kgm-lyric-head { padding: 12px 14px 2px; font-size: 12px; color: var(--kgm-dim); display: flex; justify-content: space-between; gap: 8px; }
-.kgm-lyric-box { flex: 1; overflow-y: auto; padding: 10px 18px 28px; scrollbar-width: thin; }
+.kgm-lyric-head { padding: 10px 14px 2px; font-size: 12px; color: var(--kgm-dim); display: flex; justify-content: space-between; gap: 8px; }
+.kgm-lyric-box { flex: 1; overflow-y: auto; padding: 8px 18px 20px; scrollbar-width: thin; }
 .kgm-lyric-line { padding: 5px 0; font-size: 13px; line-height: 1.55; opacity: .38; transition: opacity .22s; }
 .kgm-lyric-line.kgm-active { opacity: 1; font-weight: 600; color: var(--kgm-brand); }
 .kgm-w { transition: color .1s; }
 .kgm-w-done { color: var(--kgm-brand); }
 .kgm-err { margin: 0 12px 8px; padding: 7px 10px; border-radius: 9px; font-size: 12px; background: rgba(220,80,70,.12); color: #e05a4e; }
-.kgm-root[data-theme="dark"] .kgm-err { color: #ff8a80; }
+.kgm-root[data-theme="dark"] .kgm-err, .kgm-side[data-theme="dark"] .kgm-err { color: #ff8a80; }
 .kgm-settings { padding: 2px 14px 14px; overflow-y: auto; flex: 1; }
 .kgm-subtabs { display: flex; gap: 4px; margin-bottom: 12px; }
 .kgm-subtab { flex: 1; height: 30px; border: 1px solid var(--kgm-border); border-radius: 8px; background: transparent; color: var(--kgm-dim); cursor: pointer; font-size: 12px; }
 .kgm-subtab.kgm-on { color: var(--kgm-fg); border-color: var(--kgm-brand); background: color-mix(in srgb, var(--kgm-brand) 10%, transparent); font-weight: 600; }
-.kgm-section { margin-bottom: 16px; }
+.kgm-section { margin-bottom: 14px; }
 .kgm-section-title { font-size: 11px; font-weight: 600; color: var(--kgm-dim); letter-spacing: .04em; margin-bottom: 8px; }
 .kgm-themes { display: flex; gap: 10px; }
 .kgm-theme {
@@ -173,24 +213,18 @@ window.__ModuleLoader__.load({
 }
 .kgm-theme:hover { border-color: var(--kgm-brand); }
 .kgm-theme.kgm-on { border-color: var(--kgm-brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--kgm-brand) 18%, transparent); }
-.kgm-swatch { height: 32px; border-radius: 7px; margin-bottom: 7px; border: 1px solid rgba(0,0,0,.06); }
+.kgm-swatch { height: 28px; border-radius: 7px; margin-bottom: 6px; border: 1px solid rgba(0,0,0,.06); }
 .kgm-swatch-light { background: linear-gradient(135deg, rgba(255,255,255,.95), rgba(240,244,255,.75)); }
 .kgm-swatch-dark { background: linear-gradient(135deg, rgba(28,30,38,.95), rgba(44,48,60,.8)); }
 .kgm-theme-name { font-size: 12px; font-weight: 600; }
 .kgm-colors { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.kgm-color {
-  width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0,0,0,.18); transition: transform .14s;
-}
+.kgm-color { width: 26px; height: 26px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,.18); transition: transform .14s; }
 .kgm-color:hover { transform: scale(1.12); }
 .kgm-color.kgm-on { border-color: var(--kgm-fg); transform: scale(1.12); }
-.kgm-color-custom {
-  width: 30px; height: 26px; padding: 0; border: 1px dashed var(--kgm-border); border-radius: 7px;
-  background: transparent; cursor: pointer;
-}
+.kgm-color-custom { width: 30px; height: 26px; padding: 0; border: 1px dashed var(--kgm-border); border-radius: 7px; background: transparent; cursor: pointer; }
 .kgm-color-hex { font-size: 11px; color: var(--kgm-dim); font-family: ui-monospace, Consolas, monospace; margin-left: 4px; }
 .kgm-cookie textarea {
-  width: 100%; height: 74px; resize: none; padding: 8px; font-size: 11px;
+  width: 100%; height: 70px; resize: none; padding: 8px; font-size: 11px;
   border: 1px solid var(--kgm-border); border-radius: 9px;
   background: rgba(255,255,255,.06); color: inherit; outline: none;
   font-family: ui-monospace, Consolas, monospace;
@@ -206,21 +240,16 @@ window.__ModuleLoader__.load({
 .kgm-chips { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 12px 8px; }
 .kgm-chip { border: 1px solid var(--kgm-border); background: transparent; color: var(--kgm-dim); border-radius: 999px; padding: 3px 10px; font-size: 11px; cursor: pointer; }
 .kgm-chip.kgm-on { border-color: var(--kgm-brand); color: var(--kgm-brand); background: color-mix(in srgb, var(--kgm-brand) 10%, transparent); }
+.kgm-modes { display: flex; gap: 8px; }
+.kgm-mode { flex: 1; border: 1.5px solid var(--kgm-border); border-radius: 10px; padding: 9px; background: transparent; color: inherit; cursor: pointer; text-align: left; }
+.kgm-mode.kgm-on { border-color: var(--kgm-brand); background: color-mix(in srgb, var(--kgm-brand) 8%, transparent); }
+.kgm-mode-name { font-size: 12px; font-weight: 600; }
+.kgm-mode-desc { font-size: 10.5px; color: var(--kgm-dim); margin-top: 2px; }
 `
 
     /* ------------------------------------------------------------------ */
-    async function api(path, init) {
-      const res = await fetch(path, init)
-      return res.json()
-    }
-
-    function fmt(sec) {
-      if (!Number.isFinite(sec) || sec < 0) return '0:00'
-      const m = Math.floor(sec / 60)
-      const s = Math.floor(sec % 60)
-      return m + ':' + String(s).padStart(2, '0')
-    }
-
+    /* 存储                                                                */
+    /* ------------------------------------------------------------------ */
     function loadStore() {
       try {
         return JSON.parse(localStorage.getItem(STORE_KEY) || '{}') || {}
@@ -237,6 +266,293 @@ window.__ModuleLoader__.load({
       }
     }
 
+    async function api(path, init) {
+      const res = await fetch(path, init)
+      return res.json()
+    }
+
+    function fmt(sec) {
+      if (!Number.isFinite(sec) || sec < 0) return '0:00'
+      const m = Math.floor(sec / 60)
+      const s = Math.floor(sec % 60)
+      return m + ':' + String(s).padStart(2, '0')
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 全局设置 store                                                       */
+    /* ------------------------------------------------------------------ */
+    const settings = (() => {
+      const initial = loadStore()
+      const state = {
+        theme: initial.theme === 'dark' ? 'dark' : 'light',
+        accent: typeof initial.accent === 'string' ? initial.accent : '#3f6bff',
+        ui: initial.ui === 'side' ? 'side' : 'dock',
+        dockLocked: initial.dockLocked !== false,
+        dockPos: initial.dockPos || null,
+        sideCollapsed: false,
+      }
+      const listeners = new Set()
+      return {
+        state,
+        subscribe(fn) {
+          listeners.add(fn)
+          return () => listeners.delete(fn)
+        },
+        update(patch) {
+          Object.assign(state, patch)
+          saveStore(patch)
+          listeners.forEach((fn) => fn())
+        },
+      }
+    })()
+
+    function useSettings() {
+      const [, force] = useState(0)
+      useEffect(() => settings.subscribe(() => force((v) => v + 1)), [])
+      return settings.state
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 播放器单例：两个 UI 共享，切换界面不中断                             */
+    /* ------------------------------------------------------------------ */
+    const player = (() => {
+      const state = {
+        song: null,
+        playing: false,
+        cur: 0,
+        dur: 0,
+        queue: Array.isArray(loadStore().queue) ? loadStore().queue : [],
+        index: -1,
+        lyric: { lines: [], meta: {} },
+        error: '',
+        volume: typeof loadStore().volume === 'number' ? loadStore().volume : 0.8,
+      }
+      const listeners = new Set()
+      let audio = null
+      let proxyTried = ''
+
+      const emit = () => listeners.forEach((fn) => fn())
+
+      function ensureAudio() {
+        if (audio) return audio
+        audio = new Audio()
+        audio.preload = 'auto'
+        audio.volume = state.volume
+        audio.addEventListener('timeupdate', () => {
+          state.cur = audio.currentTime || 0
+          emit()
+        })
+        const onMeta = () => {
+          state.dur = Number.isFinite(audio.duration) ? audio.duration : 0
+          emit()
+        }
+        audio.addEventListener('loadedmetadata', onMeta)
+        audio.addEventListener('durationchange', onMeta)
+        audio.addEventListener('play', () => {
+          state.playing = true
+          emit()
+        })
+        audio.addEventListener('pause', () => {
+          state.playing = false
+          emit()
+        })
+        audio.addEventListener('ended', () => playNext())
+        audio.addEventListener('error', () => {
+          const src = audio.currentSrc || audio.src
+          if (!src || src.indexOf('/local-audio') !== -1) {
+            state.error = '音频加载失败'
+            emit()
+            return
+          }
+          if (proxyTried === src) {
+            state.error = '音频加载失败，换一首试试'
+            emit()
+            return
+          }
+          proxyTried = src
+          const pos = audio.currentTime
+          audio.src = API + '/audio?url=' + encodeURIComponent(src)
+          audio.load()
+          if (pos > 0) audio.currentTime = pos
+          audio.play().catch(() => {
+            state.error = '音频加载失败，换一首试试'
+            emit()
+          })
+        })
+        return audio
+      }
+
+      const sameSong = (a, b) => {
+        if (!a || !b) return false
+        if (a.localPath || b.localPath) return a.localPath === b.localPath
+        return a.hash && b.hash && a.hash === b.hash
+      }
+
+      async function loadLyric(song) {
+        try {
+          let hash = song.hash
+          let duration = song.duration || 0
+          if (!hash && song.localPath) {
+            const kw = ((song.singer ? song.singer + ' ' : '') + song.name).trim()
+            const sr = await api(API + '/search?q=' + encodeURIComponent(kw) + '&size=1')
+            const hit = sr && sr.ok && sr.songs && sr.songs[0]
+            if (!hit) return
+            hash = hit.hash
+            duration = hit.duration || duration
+          }
+          if (!hash) return
+          const r = await api(API + '/lyric?hash=' + encodeURIComponent(hash) + '&duration=' + duration)
+          if (r && r.ok) {
+            state.lyric = { lines: r.lines || [], meta: r.meta || {} }
+            emit()
+          }
+        } catch {
+          /* 歌词失败不影响播放 */
+        }
+      }
+
+      /** 点一首歌：已经在队列里就跳过去，否则追加到队列末尾。 */
+      async function playSong(song) {
+        if (!song) return
+        const a = ensureAudio()
+        state.error = ''
+        let idx = state.queue.findIndex((s) => sameSong(s, song))
+        if (idx < 0) {
+          state.queue = [...state.queue, song]
+          idx = state.queue.length - 1
+        }
+        state.index = idx
+        state.song = state.queue[idx] || song
+        state.cur = 0
+        state.dur = 0
+        state.lyric = { lines: [], meta: {} }
+        emit()
+        saveStore({ queue: state.queue.map((s) => ({ hash: s.hash, name: s.name, singer: s.singer, duration: s.duration, localPath: s.localPath, albumId: s.albumId, kgm: s.kgm })) })
+
+        if (String(song.localPath || '').trim()) {
+          proxyTried = ''
+          a.src = API + '/local-audio?path=' + encodeURIComponent(song.localPath)
+          a.volume = state.volume
+          try {
+            await a.play()
+          } catch (e) {
+            state.error = '本地文件播放失败：' + (e && e.message ? e.message : String(e))
+            emit()
+          }
+          loadLyric(song)
+          return
+        }
+
+        let info
+        try {
+          info = await api(
+            API + '/play?hash=' + encodeURIComponent(song.hash) + '&albumId=' + encodeURIComponent(song.albumId || ''),
+          )
+        } catch {
+          state.error = '连不上 Host 接口'
+          emit()
+          return
+        }
+        if (!info.ok) {
+          state.error = info.error || '取播放地址失败'
+          emit()
+          return
+        }
+        if (!info.url) {
+          state.error = info.hasCookie
+            ? '这首歌暂无版权或需要更高会员权益'
+            : 'VIP 歌曲需要先在「设置 → 账号」里粘贴酷狗 Cookie'
+          emit()
+          return
+        }
+        proxyTried = ''
+        a.src = info.url
+        a.volume = state.volume
+        try {
+          await a.play()
+        } catch (e) {
+          state.error = '浏览器拒绝播放：' + (e && e.message ? e.message : String(e))
+          emit()
+        }
+        loadLyric(song)
+      }
+
+      function playNext() {
+        const q = state.queue
+        if (!q.length) return
+        const next = (state.index + 1) % q.length
+        playSong(q[next])
+      }
+
+      function playPrev() {
+        const q = state.queue
+        if (!q.length) return
+        const prev = (state.index - 1 + q.length) % q.length
+        playSong(q[prev])
+      }
+
+      function toggle() {
+        const a = ensureAudio()
+        if (!state.song && state.queue.length) {
+          playSong(state.queue[0])
+          return
+        }
+        if (a.paused) a.play().catch(() => {})
+        else a.pause()
+      }
+
+      function seekTo(ratio) {
+        const a = ensureAudio()
+        if (!Number.isFinite(a.duration) || a.duration <= 0) return
+        a.currentTime = Math.min(1, Math.max(0, ratio)) * a.duration
+      }
+
+      function setVolume(v) {
+        const a = ensureAudio()
+        a.volume = v
+        state.volume = v
+        saveStore({ volume: v })
+        emit()
+      }
+
+      return {
+        state,
+        subscribe(fn) {
+          listeners.add(fn)
+          return () => listeners.delete(fn)
+        },
+        playSong,
+        next: playNext,
+        prev: playPrev,
+        toggle,
+        seekTo,
+        setVolume,
+      }
+    })()
+
+    function usePlayer() {
+      const [, force] = useState(0)
+      useEffect(() => player.subscribe(() => force((v) => v + 1)), [])
+      return player.state
+    }
+
+    /* 账号资料 */
+    function useProfile() {
+      const [profile, setProfile] = useState({ loggedIn: false, nick: '', userid: '', avatar: '' })
+      useEffect(() => {
+        let alive = true
+        api(API + '/profile')
+          .then((r) => {
+            if (alive && r && r.ok) setProfile(r)
+          })
+          .catch(() => {})
+        return () => {
+          alive = false
+        }
+      }, [])
+      return profile
+    }
+
     const Icon = {
       play: () => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor' }, h('path', { d: 'M8 5v14l11-7z' })),
       pause: () => h('svg', { viewBox: '0 0 24 24', fill: 'currentColor' }, h('path', { d: 'M7 5h4v14H7zM13 5h4v14h-4z' })),
@@ -246,233 +562,98 @@ window.__ModuleLoader__.load({
       down: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' }, h('path', { d: 'M6 9l6 6 6-6' })),
       search: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round' }, h('circle', { cx: 11, cy: 11, r: 6.5 }), h('path', { d: 'M20 20l-4.2-4.2' })),
       gear: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.9, strokeLinecap: 'round' }, h('circle', { cx: 12, cy: 12, r: 3.2 }), h('path', { d: 'M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.56V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.56 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.56 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.56 1z' })),
+      lock: (locked) => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' },
+        h('rect', { x: 4.5, y: 10.5, width: 15, height: 10, rx: 2.5 }),
+        locked ? h('path', { d: 'M8 10.5V7a4 4 0 0 1 8 0v3.5' }) : h('path', { d: 'M8 10.5V7a4 4 0 0 1 7.5-2' })),
+      reset: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round' }, h('path', { d: 'M4 9a8 8 0 1 1 0 6' }), h('path', { d: 'M4 4v5h5' })),
+      collapse: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round' }, h('path', { d: 'M14 6l-6 6 6 6' })),
+      expand: () => h('svg', { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2.2, strokeLinecap: 'round' }, h('path', { d: 'M10 6l6 6-6 6' })),
     }
 
-    function KugouDock() {
-      const cached = useMemo(() => loadStore(), [])
-      const [expanded, setExpanded] = useState(false)
-      const [tab, setTab] = useState(cached.tab || 'search')
-      const [settingsTab, setSettingsTab] = useState('look')
-      const [theme, setTheme] = useState(cached.theme === 'dark' ? 'dark' : 'light')
-      const [accent, setAccent] = useState(typeof cached.accent === 'string' ? cached.accent : '#3f6bff')
+    /* ------------------------------------------------------------------ */
+    /* 通用小组件                                                           */
+    /* ------------------------------------------------------------------ */
+    function SongRow({ song, i, listKey, current, showIdx, onPick }) {
+      const isCurrent = current
+      return h(
+        'button',
+        {
+          className: 'kgm-song' + (isCurrent ? ' kgm-current' : ''),
+          onClick: () => onPick(song, listKey),
+          title: (song.name || '') + (song.singer ? ' - ' + song.singer : ''),
+        },
+        showIdx ? h('span', { className: 'kgm-idx' }, String(i + 1)) : null,
+        h('span', { className: 'kgm-song-name' }, song.name || song.songName || '未知歌曲'),
+        h('span', { className: 'kgm-song-singer' }, song.singer || ''),
+        song.localPath
+          ? h('span', { className: 'kgm-tag kgm-tag-local' }, song.kgm ? '加密' : '本地')
+          : song.free === false
+            ? h('span', { className: 'kgm-tag kgm-tag-vip' }, 'VIP')
+            : h('span', { className: 'kgm-tag' }, '免费'),
+      )
+    }
 
+    function LyricView({ lyric, cur, boxRef }) {
+      const lineIdx = useMemo(() => {
+        const ms = cur * 1000
+        let idx = -1
+        for (let i = 0; i < lyric.lines.length; i++) {
+          if (lyric.lines[i].start <= ms) idx = i
+          else break
+        }
+        return idx
+      }, [cur, lyric])
+
+      useEffect(() => {
+        const box = boxRef.current
+        if (!box || lineIdx < 0) return
+        const el = box.querySelector('[data-line="' + lineIdx + '"]')
+        if (!el) return
+        box.scrollTo({ top: Math.max(0, el.offsetTop - box.clientHeight / 2 + el.offsetHeight / 2), behavior: 'smooth' })
+      }, [lineIdx, boxRef])
+
+      if (!lyric.lines.length) return h('div', { className: 'kgm-hint' }, '播放歌曲后这里显示歌词')
+      return lyric.lines.map((line, i) => {
+        const active = i === lineIdx
+        if (!active) {
+          return h('div', { key: i, className: 'kgm-lyric-line', 'data-line': i }, line.words.map((w) => w.text).join(''))
+        }
+        const rel = cur * 1000 - line.start
+        return h(
+          'div',
+          { key: i, className: 'kgm-lyric-line kgm-active', 'data-line': i },
+          line.words.map((w, j) => h('span', { key: j, className: rel >= w.t ? 'kgm-w kgm-w-done' : 'kgm-w' }, w.text)),
+        )
+      })
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 曲库（搜索/歌单/队列）                                               */
+    /* ------------------------------------------------------------------ */
+    function Library({ tab, profile, onProfile, compact }) {
+      const p = usePlayer()
       const [query, setQuery] = useState('')
       const [results, setResults] = useState([])
       const [loading, setLoading] = useState(false)
-      const [queue, setQueue] = useState(Array.isArray(cached.queue) ? cached.queue : [])
-      const [index, setIndex] = useState(-1)
-      const [song, setSong] = useState(null)
-      const [playing, setPlaying] = useState(false)
-      const [cur, setCur] = useState(0)
-      const [dur, setDur] = useState(0)
-      const [lyric, setLyric] = useState({ lines: [], meta: {} })
-      const [error, setError] = useState('')
-      const [hasCookie, setHasCookie] = useState(false)
-      const [cookieDraft, setCookieDraft] = useState('')
-      const [volume, setVolume] = useState(typeof cached.volume === 'number' ? cached.volume : 0.8)
-
-      // 歌单
       const [plMode, setPlMode] = useState('local')
       const [plInput, setPlInput] = useState('')
       const [plLoading, setPlLoading] = useState(false)
       const [onlineList, setOnlineList] = useState({ id: '', name: '', songs: [] })
       const [localLists, setLocalLists] = useState([])
       const [localCloud, setLocalCloud] = useState([])
-      const [localError, setLocalError] = useState('')
       const [localFileList, setLocalFileList] = useState([])
       const [activeLocal, setActiveLocal] = useState('recent')
-
-      const audioRef = useRef(null)
-      const lyricRef = useRef(null)
-      const proxyTried = useRef('')
-      const liveRef = useRef({ queue, index })
-      liveRef.current = { queue, index }
-
-      useEffect(() => {
-        saveStore({ theme, accent })
-      }, [theme, accent])
-
-      useEffect(() => {
-        const a = new Audio()
-        a.preload = 'auto'
-        const store = loadStore()
-        a.volume = typeof store.volume === 'number' ? store.volume : 0.8
-        audioRef.current = a
-
-        const onTime = () => setCur(a.currentTime || 0)
-        const onMeta = () => setDur(Number.isFinite(a.duration) ? a.duration : 0)
-        const onPlay = () => setPlaying(true)
-        const onPause = () => setPlaying(false)
-        const onEnd = () => {
-          const { queue: q, index: i } = liveRef.current
-          if (i + 1 < q.length) playAtRef.current(q, i + 1)
-          else setPlaying(false)
-        }
-        const onErr = () => {
-          const src = a.currentSrc || a.src
-          if (!src || src.indexOf('/local-audio') !== -1) {
-            setError('音频加载失败')
-            return
-          }
-          if (proxyTried.current === src) {
-            setError('音频加载失败，换一首试试')
-            return
-          }
-          proxyTried.current = src
-          const pos = a.currentTime
-          a.src = API + '/audio?url=' + encodeURIComponent(src)
-          a.load()
-          if (pos > 0) a.currentTime = pos
-          a.play().catch(() => setError('音频加载失败，换一首试试'))
-        }
-
-        a.addEventListener('timeupdate', onTime)
-        a.addEventListener('loadedmetadata', onMeta)
-        a.addEventListener('durationchange', onMeta)
-        a.addEventListener('play', onPlay)
-        a.addEventListener('pause', onPause)
-        a.addEventListener('ended', onEnd)
-        a.addEventListener('error', onErr)
-        return () => {
-          a.removeEventListener('timeupdate', onTime)
-          a.removeEventListener('loadedmetadata', onMeta)
-          a.removeEventListener('durationchange', onMeta)
-          a.removeEventListener('play', onPlay)
-          a.removeEventListener('pause', onPause)
-          a.removeEventListener('ended', onEnd)
-          a.removeEventListener('error', onErr)
-          a.pause()
-          a.src = ''
-          audioRef.current = null
-        }
-      }, [])
-
-      const loadLyricFor = useCallback(async (target, fallbackDuration) => {
-        try {
-          let hash = target.hash
-          let duration = target.duration || fallbackDuration || 0
-          if (!hash && target.localPath) {
-            // 本地文件没有 hash：按歌名搜一首拿歌词
-            const kw = ((target.singer ? target.singer + ' ' : '') + target.name).trim()
-            const sr = await api(API + '/search?q=' + encodeURIComponent(kw) + '&size=1')
-            const hit = sr && sr.ok && sr.songs && sr.songs[0]
-            if (!hit) return
-            hash = hit.hash
-            duration = hit.duration || duration
-          }
-          if (!hash) return
-          const r = await api(API + '/lyric?hash=' + encodeURIComponent(hash) + '&duration=' + duration)
-          if (r && r.ok) setLyric({ lines: r.lines || [], meta: r.meta || {} })
-        } catch {
-          /* 歌词失败不影响播放 */
-        }
-      }, [])
-
-      const playAt = useCallback(async (list, i) => {
-        const target = list[i]
-        if (!target) return
-        setError('')
-        setSong(target)
-        setIndex(i)
-        setQueue(list)
-        setLyric({ lines: [], meta: {} })
-        setCur(0)
-        setDur(0)
-        saveStore({ queue: list.map((s) => ({ hash: s.hash, name: s.name, singer: s.singer, duration: s.duration, localPath: s.localPath })) })
-
-        const a = audioRef.current
-        if (!a) return
-
-        if (target.localPath) {
-          proxyTried.current = ''
-          a.src = API + '/local-audio?path=' + encodeURIComponent(target.localPath)
-          a.volume = volume
-          try {
-            await a.play()
-          } catch (e) {
-            setError('本地文件播放失败：' + (e && e.message ? e.message : String(e)))
-          }
-          loadLyricFor(target)
-          return
-        }
-
-        let info
-        try {
-          info = await api(API + '/play?hash=' + encodeURIComponent(target.hash) + '&albumId=' + encodeURIComponent(target.albumId || ''))
-        } catch {
-          setError('连不上 Host 接口')
-          return
-        }
-        if (!info.ok) {
-          setError(info.error || '取播放地址失败')
-          return
-        }
-        if (!info.url) {
-          setError(
-            info.hasCookie
-              ? '这首歌暂无版权或需要更高会员权益'
-              : 'VIP 歌曲需要先在「设置 → 账号」里粘贴酷狗 Cookie',
-          )
-          return
-        }
-        proxyTried.current = ''
-        a.src = info.url
-        a.volume = volume
-        try {
-          await a.play()
-        } catch (e) {
-          setError('浏览器拒绝播放：' + (e && e.message ? e.message : String(e)))
-        }
-        loadLyricFor(target, info.duration)
-      }, [volume, loadLyricFor])
-
-      const playAtRef = useRef(playAt)
-      playAtRef.current = playAt
-
-      const next = useCallback(() => {
-        const { queue: q, index: i } = liveRef.current
-        if (!q.length) return
-        playAtRef.current(q, (i + 1) % q.length)
-      }, [])
-
-      const prev = useCallback(() => {
-        const { queue: q, index: i } = liveRef.current
-        if (!q.length) return
-        playAtRef.current(q, (i - 1 + q.length) % q.length)
-      }, [])
-
-      const toggle = useCallback(() => {
-        const a = audioRef.current
-        if (!a) return
-        if (!song && queue.length) {
-          playAtRef.current(queue, 0)
-          return
-        }
-        if (a.paused) a.play().catch(() => {})
-        else a.pause()
-      }, [song, queue])
-
-      const seek = useCallback((e) => {
-        const a = audioRef.current
-        if (!a || !Number.isFinite(a.duration) || a.duration <= 0) return
-        const rect = e.currentTarget.getBoundingClientRect()
-        const ratio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width))
-        a.currentTime = ratio * a.duration
-      }, [])
+      const [localError, setLocalError] = useState('')
 
       const doSearch = useCallback(async () => {
         const q = query.trim()
         if (!q) return
         setLoading(true)
-        setError('')
         try {
           const r = await api(API + '/search?q=' + encodeURIComponent(q) + '&size=20')
-          if (!r.ok) {
-            setError(r.error || '搜索失败')
-            setResults([])
-          } else setResults(r.songs || [])
+          setResults(r && r.ok ? r.songs || [] : [])
         } catch {
-          setError('搜索请求失败')
+          setResults([])
         } finally {
           setLoading(false)
         }
@@ -482,19 +663,15 @@ window.__ModuleLoader__.load({
         const input = String(raw || '').trim()
         if (!input) return
         setPlLoading(true)
-        setError('')
         try {
           const r = await api(API + '/playlist?id=' + encodeURIComponent(input) + '&size=200')
-          if (!r.ok) {
-            setError(r.error || '歌单导入失败')
-            return
+          if (r && r.ok) {
+            setOnlineList({ id: r.id, name: r.name, songs: r.songs || [] })
+            setPlInput(r.id)
+            saveStore({ playlist: { id: r.id, name: r.name, songs: r.songs || [] } })
           }
-          const nextPl = { id: r.id, name: r.name, songs: r.songs || [] }
-          setOnlineList(nextPl)
-          setPlInput(r.id)
-          saveStore({ playlist: nextPl })
         } catch {
-          setError('歌单请求失败')
+          /* ignore */
         } finally {
           setPlLoading(false)
         }
@@ -511,7 +688,7 @@ window.__ModuleLoader__.load({
           setLocalLists(r.playlists || [])
           setLocalCloud(r.cloudLists || [])
           if ((r.playlists || []).length) {
-            const has = (r.playlists || []).some((p) => p.id === activeLocal)
+            const has = (r.playlists || []).some((x) => x.id === activeLocal)
             setActiveLocal(has ? activeLocal : r.playlists[0].id)
           }
         } catch {
@@ -526,134 +703,26 @@ window.__ModuleLoader__.load({
       }, [activeLocal])
 
       useEffect(() => {
-        if (expanded && tab === 'playlist' && plMode === 'local' && !localLists.length) loadLocal()
+        if (tab === 'playlist' && plMode === 'local' && !localLists.length) loadLocal()
         // eslint-disable-next-line react-hooks/exhaustive-deps
-      }, [expanded, tab, plMode])
+      }, [tab, plMode])
 
       useEffect(() => {
-        if (cached.playlist && cached.playlist.id && !onlineList.id) {
-          api(API + '/playlist?id=' + encodeURIComponent(cached.playlist.id) + '&size=200')
-            .then((r) => {
-              if (r && r.ok) {
-                setOnlineList({ id: r.id, name: r.name, songs: r.songs || [] })
-                setPlInput(r.id)
-              }
-            })
-            .catch(() => {})
+        const cachedPl = loadStore().playlist
+        if (cachedPl && cachedPl.id && !onlineList.id) {
+          setOnlineList(cachedPl)
+          setPlInput(cachedPl.id)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
       }, [])
 
-      const checkCookie = useCallback(async () => {
-        try {
-          const r = await api(API + '/cookie')
-          setHasCookie(Boolean(r && r.hasCookie))
-        } catch {
-          /* ignore */
-        }
+      /** 只把点中的这一首加入现有队列 */
+      const pick = useCallback((song) => {
+        player.playSong(song)
       }, [])
 
-      useEffect(() => {
-        checkCookie()
-      }, [checkCookie])
-
-      const saveCookie = useCallback(async () => {
-        try {
-          const r = await api(API + '/cookie', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cookie: cookieDraft }),
-          })
-          setHasCookie(Boolean(r && r.hasCookie))
-          setCookieDraft('')
-        } catch {
-          setError('保存 Cookie 失败')
-        }
-      }, [cookieDraft])
-
-      const clearCookie = useCallback(async () => {
-        try {
-          await api(API + '/cookie', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ cookie: '' }),
-          })
-          setHasCookie(false)
-        } catch {
-          /* ignore */
-        }
-      }, [])
-
-      const changeVolume = useCallback((e) => {
-        const v = Number(e.target.value)
-        setVolume(v)
-        saveStore({ volume: v })
-        if (audioRef.current) audioRef.current.volume = v
-      }, [])
-
-      const lineIdx = useMemo(() => {
-        const ms = cur * 1000
-        let idx = -1
-        for (let i = 0; i < lyric.lines.length; i++) {
-          if (lyric.lines[i].start <= ms) idx = i
-          else break
-        }
-        return idx
-      }, [cur, lyric])
-
-      useEffect(() => {
-        if (!expanded || lineIdx < 0) return
-        const box = lyricRef.current
-        if (!box) return
-        const el = box.querySelector('[data-line="' + lineIdx + '"]')
-        if (!el) return
-        box.scrollTo({ top: Math.max(0, el.offsetTop - box.clientHeight / 2 + el.offsetHeight / 2), behavior: 'smooth' })
-      }, [lineIdx, expanded])
-
-      const progress = dur > 0 ? Math.min(100, (cur / dur) * 100) : 0
-
-      const renderLine = (line, i) => {
-        const active = i === lineIdx
-        if (!active) {
-          return h('div', { key: i, className: 'kgm-lyric-line', 'data-line': i }, line.words.map((w) => w.text).join(''))
-        }
-        const rel = cur * 1000 - line.start
-        return h(
-          'div',
-          { key: i, className: 'kgm-lyric-line kgm-active', 'data-line': i },
-          line.words.map((w, j) => h(
-            'span',
-            { key: j, className: rel >= w.t ? 'kgm-w kgm-w-done' : 'kgm-w' },
-            w.text,
-          )),
-        )
-      }
-
-      const renderSong = (s, i, list, showIdx) => {
-        const isCurrent = list === queue && i === index
-        return h(
-          'button',
-          {
-            key: (s.hash || s.localPath || 'k') + i,
-            className: 'kgm-song' + (isCurrent ? ' kgm-current' : ''),
-            onClick: () => playAt(list, i),
-            title: (s.name || '') + (s.singer ? ' - ' + s.singer : ''),
-          },
-          showIdx ? h('span', { className: 'kgm-idx' }, String(i + 1)) : null,
-          h('span', { className: 'kgm-song-name' }, s.name || s.songName || '未知歌曲'),
-          h('span', { className: 'kgm-song-singer' }, s.singer || ''),
-          s.localPath
-            ? h('span', { className: 'kgm-tag kgm-tag-local' }, s.kgm ? '加密' : '本地')
-            : s.free === false
-              ? h('span', { className: 'kgm-tag kgm-tag-vip' }, 'VIP')
-              : h('span', { className: 'kgm-tag' }, '免费'),
-        )
-      }
-
-      /* ---------------- 本地歌单视图 ---------------- */
-      const activeList = localLists.find((p) => p.id === activeLocal)
-      const localSongs = activeList ? activeList.songs : localFileList
-      const localSongsForPlay = useMemo(() => {
+      const activeList = localLists.find((x) => x.id === activeLocal)
+      const localSongs = useMemo(() => {
         if (activeList) return activeList.songs
         return localFileList.map((f) => {
           const base = f.name.replace(/\.[^.]+$/, '')
@@ -669,125 +738,194 @@ window.__ModuleLoader__.load({
         })
       }, [activeList, localFileList])
 
-      const searchBody = [
-        h(
-          'div',
-          { className: 'kgm-search', key: 'search' },
-          h('input', {
-            className: 'kgm-input',
-            placeholder: '搜索歌曲 / 歌手，回车',
-            value: query,
-            onChange: (e) => setQuery(e.target.value),
-            onKeyDown: (e) => {
-              if (e.key === 'Enter') doSearch()
-            },
-          }),
-          h('button', { className: 'kgm-go', onClick: doSearch, disabled: loading || !query.trim() }, loading ? '搜索中' : '搜索'),
-        ),
-        h(
-          'div',
-          { className: 'kgm-list', key: 'list' },
-          results.length
-            ? results.map((s, i) => renderSong(s, i, results, false))
-            : h('div', { className: 'kgm-hint' }, '输入歌名回车，挑一首开播。免费歌直接能听；VIP 歌在「设置 → 账号」填 Cookie。'),
-        ),
-      ]
+      const currentKey = p.song ? p.song.hash || p.song.localPath : ''
 
-      const playlistBody = [
-        h(
+      if (tab === 'search') {
+        return h(
           'div',
-          { className: 'kgm-chips', key: 'chips' },
-          h('button', { className: 'kgm-chip' + (plMode === 'local' ? ' kgm-on' : ''), onClick: () => { setPlMode('local'); if (!localLists.length) loadLocal() } }, '本地歌单'),
-          h('button', { className: 'kgm-chip' + (plMode === 'link' ? ' kgm-on' : ''), onClick: () => setPlMode('link') }, '链接导入'),
-          h('button', { className: 'kgm-chip', style: { marginLeft: 'auto' }, onClick: loadLocal }, '刷新'),
-        ),
-      ]
-
-      if (plMode === 'local') {
-        playlistBody.push(
-          localError ? h('div', { className: 'kgm-err', key: 'e' }, localError) : null,
+          { style: { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } },
           h(
             'div',
-            { className: 'kgm-chips', key: 'lists' },
-            localLists.map((p) =>
-              h('button', {
-                key: p.id,
-                className: 'kgm-chip' + (activeLocal === p.id ? ' kgm-on' : ''),
-                onClick: () => setActiveLocal(p.id),
-              }, p.name + ' · ' + p.count),
-            ),
-            h('button', {
-              key: 'files',
-              className: 'kgm-chip' + (activeLocal === 'files' ? ' kgm-on' : ''),
-              onClick: () => setActiveLocal('files'),
-            }, '本地文件 · ' + localFileList.length),
-          ),
-          localCloud.length
-            ? h('div', { className: 'kgm-small', style: { padding: '0 14px' }, key: 'cloud' },
-                '云端歌单（歌曲在服务器，需登录后同步）：' + localCloud.map((c) => c.name).join(' / '))
-            : null,
-          h(
-            'div',
-            { className: 'kgm-list', key: 'songs' },
-            localSongsForPlay.length
-              ? localSongsForPlay.map((s, i) => renderSong(s, i, localSongsForPlay, true))
-              : h('div', { className: 'kgm-hint' }, '点上面的歌单看看，或者刷新一下。'),
-          ),
-        )
-      } else {
-        playlistBody.push(
-          h(
-            'div',
-            { className: 'kgm-search', key: 'pl-search' },
+            { className: 'kgm-search' },
             h('input', {
               className: 'kgm-input',
-              placeholder: '粘贴酷狗歌单链接，或歌单 ID',
-              value: plInput,
-              onChange: (e) => setPlInput(e.target.value),
+              placeholder: '搜索歌曲 / 歌手，回车',
+              value: query,
+              onChange: (e) => setQuery(e.target.value),
               onKeyDown: (e) => {
-                if (e.key === 'Enter') importPlaylist(plInput)
+                if (e.key === 'Enter') doSearch()
               },
             }),
-            h('button', { className: 'kgm-go', onClick: () => importPlaylist(plInput), disabled: plLoading || !plInput.trim() }, plLoading ? '拉取中' : '导入'),
+            h('button', { className: 'kgm-go', onClick: doSearch, disabled: loading || !query.trim() }, loading ? '搜索中' : '搜索'),
           ),
-          onlineList.songs.length
-            ? h('div', { className: 'kgm-small', style: { padding: '0 14px' }, key: 'n' },
-                '《' + onlineList.name + '》 · ' + onlineList.songs.length + ' 首')
-            : null,
           h(
             'div',
-            { className: 'kgm-list', key: 'list' },
-            onlineList.songs.length
-              ? onlineList.songs.map((s, i) => renderSong(s, i, onlineList.songs, true))
-              : h('div', { className: 'kgm-hint' }, '把酷狗歌单的分享链接粘进来，例如 www.kugou.com/yy/special/single/123456.html，拉一次就记住。'),
+            { className: 'kgm-list' },
+            results.length
+              ? results.map((s, i) =>
+                  h(SongRow, {
+                    key: (s.hash || 'k') + i,
+                    song: s,
+                    i,
+                    listKey: 'search',
+                    current: currentKey === s.hash,
+                    showIdx: false,
+                    onPick: pick,
+                  }),
+                )
+              : h('div', { className: 'kgm-hint' }, '搜一首点一首，只会把点中的那首加进队列。'),
           ),
         )
       }
 
-      const queueBody = h(
+      if (tab === 'playlist') {
+        return h(
+          'div',
+          { style: { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } },
+          h(
+            'div',
+            { className: 'kgm-chips', style: { paddingTop: 2 } },
+            h('button', { className: 'kgm-chip' + (plMode === 'local' ? ' kgm-on' : ''), onClick: () => { setPlMode('local'); if (!localLists.length) loadLocal() } }, '本地歌单'),
+            h('button', { className: 'kgm-chip' + (plMode === 'link' ? ' kgm-on' : ''), onClick: () => setPlMode('link') }, '链接导入'),
+            h('button', { className: 'kgm-chip', style: { marginLeft: 'auto' }, onClick: loadLocal }, '刷新'),
+          ),
+          plMode === 'local'
+            ? [
+                localError ? h('div', { className: 'kgm-err' }, localError) : null,
+                h(
+                  'div',
+                  { className: 'kgm-chips', key: 'lists' },
+                  localLists.map((x) =>
+                    h('button', { key: x.id, className: 'kgm-chip' + (activeLocal === x.id ? ' kgm-on' : ''), onClick: () => setActiveLocal(x.id) }, x.name + ' · ' + x.count),
+                  ),
+                  h('button', { key: 'files', className: 'kgm-chip' + (activeLocal === 'files' ? ' kgm-on' : ''), onClick: () => setActiveLocal('files') }, '本地文件 · ' + localFileList.length),
+                ),
+                localCloud.length
+                  ? h('div', { className: 'kgm-small', style: { padding: '0 14px' }, key: 'cloud' },
+                      '云端歌单（歌曲在服务器）：' + localCloud.map((c) => c.name).join(' / '))
+                  : null,
+                h(
+                  'div',
+                  { className: 'kgm-list', key: 'songs' },
+                  localSongs.length
+                    ? localSongs.map((s, i) =>
+                        h(SongRow, {
+                          key: (s.hash || s.localPath || 'l') + i,
+                          song: s,
+                          i,
+                          listKey: 'local',
+                          current: currentKey === (s.hash || s.localPath),
+                          showIdx: true,
+                          onPick: pick,
+                        }),
+                      )
+                    : h('div', { className: 'kgm-hint' }, '点上面的歌单看看。'),
+                ),
+              ]
+            : [
+                h(
+                  'div',
+                  { className: 'kgm-search', key: 'pls' },
+                  h('input', {
+                    className: 'kgm-input',
+                    placeholder: '粘贴酷狗歌单链接或 ID',
+                    value: plInput,
+                    onChange: (e) => setPlInput(e.target.value),
+                    onKeyDown: (e) => {
+                      if (e.key === 'Enter') importPlaylist(plInput)
+                    },
+                  }),
+                  h('button', { className: 'kgm-go', onClick: () => importPlaylist(plInput), disabled: plLoading || !plInput.trim() }, plLoading ? '拉取中' : '导入'),
+                ),
+                onlineList.songs.length
+                  ? h('div', { className: 'kgm-small', style: { padding: '0 14px' }, key: 'plname' }, '《' + onlineList.name + '》 · ' + onlineList.songs.length + ' 首')
+                  : null,
+                h(
+                  'div',
+                  { className: 'kgm-list', key: 'pllist' },
+                  onlineList.songs.length
+                    ? onlineList.songs.map((s, i) =>
+                        h(SongRow, { key: (s.hash || 'k') + i, song: s, i, listKey: 'online', current: currentKey === s.hash, showIdx: true, onPick: pick }),
+                      )
+                    : h('div', { className: 'kgm-hint' }, '例如 www.kugou.com/yy/special/single/123456.html'),
+                ),
+              ],
+        )
+      }
+
+      return h(
         'div',
         { className: 'kgm-list' },
-        queue.length
-          ? queue.map((s, i) => renderSong(s, i, queue, true))
+        p.queue.length
+          ? p.queue.map((s, i) =>
+              h(SongRow, { key: (s.hash || s.localPath || 'q') + i, song: s, i, listKey: 'queue', current: currentKey === (s.hash || s.localPath), showIdx: true, onPick: pick }),
+            )
           : h('div', { className: 'kgm-hint' }, '队列还是空的，先去搜几首歌。'),
       )
+    }
 
-      const lookSettings = h(
+    /* ------------------------------------------------------------------ */
+    /* 设置                                                                */
+    /* ------------------------------------------------------------------ */
+    function Settings({ profile, onCookieSaved }) {
+      const cfg = useSettings()
+      const [sub, setSub] = useState('look')
+      const [draft, setDraft] = useState('')
+      const [hasCookie, setHasCookie] = useState(false)
+      const [err, setErr] = useState('')
+
+      useEffect(() => {
+        api(API + '/cookie').then((r) => setHasCookie(Boolean(r && r.hasCookie))).catch(() => {})
+      }, [])
+
+      const saveCookie = useCallback(async () => {
+        try {
+          const r = await api(API + '/cookie', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cookie: draft }),
+          })
+          setHasCookie(Boolean(r && r.hasCookie))
+          setDraft('')
+          onCookieSaved && onCookieSaved()
+        } catch {
+          setErr('保存 Cookie 失败')
+        }
+      }, [draft, onCookieSaved])
+
+      const look = h(
         'div',
         { className: 'kgm-section' },
+        h('div', { className: 'kgm-section-title' }, '界面'),
+        h(
+          'div',
+          { className: 'kgm-modes', style: { marginBottom: 12 } },
+          h(
+            'button',
+            { className: 'kgm-mode' + (cfg.ui === 'dock' ? ' kgm-on' : ''), onClick: () => settings.update({ ui: 'dock' }) },
+            h('div', { className: 'kgm-mode-name' }, '输入框播放条'),
+            h('div', { className: 'kgm-mode-desc' }, '常驻输入框上方，可解锁拖动'),
+          ),
+          h(
+            'button',
+            { className: 'kgm-mode' + (cfg.ui === 'side' ? ' kgm-on' : ''), onClick: () => settings.update({ ui: 'side' }) },
+            h('div', { className: 'kgm-mode-name' }, '左侧边栏'),
+            h('div', { className: 'kgm-mode-desc' }, '固定左侧，带歌词面板'),
+          ),
+        ),
         h('div', { className: 'kgm-section-title' }, '主题'),
         h(
           'div',
-          { className: 'kgm-themes', style: { marginBottom: 14 } },
+          { className: 'kgm-themes', style: { marginBottom: 12 } },
           h(
             'button',
-            { className: 'kgm-theme' + (theme === 'light' ? ' kgm-on' : ''), onClick: () => setTheme('light') },
+            { className: 'kgm-theme' + (cfg.theme === 'light' ? ' kgm-on' : ''), onClick: () => settings.update({ theme: 'light' }) },
             h('div', { className: 'kgm-swatch kgm-swatch-light' }),
             h('div', { className: 'kgm-theme-name' }, '白 · 半透明'),
           ),
           h(
             'button',
-            { className: 'kgm-theme' + (theme === 'dark' ? ' kgm-on' : ''), onClick: () => setTheme('dark') },
+            { className: 'kgm-theme' + (cfg.theme === 'dark' ? ' kgm-on' : ''), onClick: () => settings.update({ theme: 'dark' }) },
             h('div', { className: 'kgm-swatch kgm-swatch-dark' }),
             h('div', { className: 'kgm-theme-name' }, '黑 · 半透明'),
           ),
@@ -799,109 +937,163 @@ window.__ModuleLoader__.load({
           ACCENTS.map((c) =>
             h('button', {
               key: c.value,
-              className: 'kgm-color' + (accent.toLowerCase() === c.value ? ' kgm-on' : ''),
+              className: 'kgm-color' + (cfg.accent.toLowerCase() === c.value ? ' kgm-on' : ''),
               style: { background: c.value },
               title: c.name + ' ' + c.value,
-              onClick: () => setAccent(c.value),
+              onClick: () => settings.update({ accent: c.value }),
             }),
           ),
           h('input', {
             type: 'color',
             className: 'kgm-color-custom',
-            value: accent,
-            title: '自定义颜色',
-            onChange: (e) => setAccent(e.target.value),
+            value: cfg.accent,
+            onChange: (e) => settings.update({ accent: e.target.value }),
           }),
-          h('span', { className: 'kgm-color-hex' }, accent.toUpperCase()),
+          h('span', { className: 'kgm-color-hex' }, cfg.accent.toUpperCase()),
         ),
       )
 
-      const accountSettings = h(
+      const account = h(
         'div',
         { className: 'kgm-section' },
         h(
           'div',
           { className: 'kgm-row', style: { marginBottom: 10 } },
           h('span', { className: 'kgm-section-title', style: { margin: 0 } }, '酷狗会员登录（Cookie）'),
-          h('span', { className: 'kgm-badge' + (hasCookie ? ' kgm-badge-on' : ''), style: { marginLeft: 'auto' } }, hasCookie ? '已配置' : '未配置'),
+          h('span', { className: 'kgm-badge' + (profile.loggedIn || hasCookie ? ' kgm-badge-on' : ''), style: { marginLeft: 'auto' } },
+            profile.loggedIn ? profile.nick || '已登录' : hasCookie ? '已配置' : '未配置'),
         ),
-        h(
-          'div',
-          { className: 'kgm-step' },
-          h('span', { className: 'kgm-num' }, '1'),
-          h('span', null, '用浏览器打开 ', h('b', null, 'kugou.com'), '，登录你的账号（有会员更好）。'),
-        ),
-        h(
-          'div',
-          { className: 'kgm-step' },
-          h('span', { className: 'kgm-num' }, '2'),
-          h('span', null, '按 ', h('b', null, 'F12'), '（笔记本试试 ', h('span', { className: 'kgm-code' }, 'Fn+F12'), ' 或 ', h('span', { className: 'kgm-code' }, 'Ctrl+Shift+I'), '）打开开发者工具。'),
-        ),
+        h('div', { className: 'kgm-step' }, h('span', { className: 'kgm-num' }, '1'), h('span', null, '浏览器打开 ', h('b', null, 'kugou.com'), ' 并登录。')),
+        h('div', { className: 'kgm-step' }, h('span', { className: 'kgm-num' }, '2'), h('span', null, '按 ', h('b', null, 'F12'), '（或 ', h('span', { className: 'kgm-code' }, 'Ctrl+Shift+I'), '）打开开发者工具。')),
         h(
           'div',
           { className: 'kgm-step' },
           h('span', { className: 'kgm-num' }, '3'),
-          h('span', null, '在开发者工具顶部找 ', h('b', null, 'Application'), '（中文版叫「应用」）。', '找不到就点顶部标签栏最右边的 ', h('b', null, '»'), ' 展开更多；或者点右上角 ', h('b', null, '⋮'), ' → More tools → Application。'),
+          h('span', null, '顶部找 ', h('b', null, 'Application'), '（中文「应用」）；找不到点标签栏右边 ', h('b', null, '»'), '，或 ', h('b', null, '⋮'), ' → More tools → Application。'),
         ),
-        h(
-          'div',
-          { className: 'kgm-step' },
-          h('span', { className: 'kgm-num' }, '4'),
-          h('span', null, '左侧展开 ', h('b', null, 'Storage → Cookies'), ' → 点 ', h('span', { className: 'kgm-code' }, 'https://www.kugou.com'), '，右边就是所有 Cookie。'),
-        ),
+        h('div', { className: 'kgm-step' }, h('span', { className: 'kgm-num' }, '4'), h('span', null, h('b', null, 'Storage → Cookies → https://www.kugou.com'), '，Filter 输 ', h('span', { className: 'kgm-code' }, 'kg_'), ' 过滤后全选复制。')),
         h(
           'div',
           { className: 'kgm-step' },
           h('span', { className: 'kgm-num' }, '5'),
-          h('span', null, '在上方 ', h('b', null, 'Filter'), ' 框里输入 ', h('span', { className: 'kgm-code' }, 'kg_'), ' 只留关键项，然后从 ', h('span', { className: 'kgm-code' }, 'Name'), ' 列拖选全部行，复制。'),
+          h('span', null, '更快的办法：Console 里键盘输入 ', h('span', { className: 'kgm-code' }, 'copy(document.cookie)'), ' 回车，已自动复制（提示「不要粘贴」时先手输 ', h('span', { className: 'kgm-code' }, 'allow pasting'), '）。'),
         ),
+        err ? h('div', { className: 'kgm-err', style: { margin: '0 0 8px' } }, err) : null,
         h(
           'div',
-          { className: 'kgm-step' },
-          h('span', { className: 'kgm-num' }, '6'),
-          h('span', null, '粘成 ', h('span', { className: 'kgm-code' }, 'name=value; name2=value2'), ' 的格式贴到下面，点保存。'),
-        ),
-        h(
-          'div',
-          { className: 'kgm-small', style: { marginTop: 6 } },
-          '偷懒办法：开发者工具里切到 ', h('span', { className: 'kgm-code' }, 'Console'), '（控制台），输入 ',
-          h('span', { className: 'kgm-code' }, 'document.cookie'), ' 回车，复制输出的字符串——但拿不到 HttpOnly 的项，偶尔不够用。',
-        ),
-        h(
-          'div',
-          { className: 'kgm-cookie', style: { marginTop: 8 } },
+          { className: 'kgm-cookie', style: { marginTop: 6 } },
           h('textarea', {
-            value: cookieDraft,
-            placeholder: 'kg_mid=...; kg_dfid=...; KuGoo=...; kugouMusicId=...',
-            onChange: (e) => setCookieDraft(e.target.value),
+            value: draft,
+            placeholder: 'kg_mid=...; kg_dfid=...; KuGoo=...',
+            onChange: (e) => setDraft(e.target.value),
           }),
         ),
         h(
           'div',
           { className: 'kgm-row', style: { marginTop: 8 } },
-          h('button', { className: 'kgm-go', onClick: saveCookie, disabled: !cookieDraft.trim() }, '保存'),
-          h('button', { className: 'kgm-btn', onClick: clearCookie, title: '清除 Cookie' }, '清除'),
+          h('button', { className: 'kgm-go', onClick: saveCookie, disabled: !draft.trim() }, '保存'),
+          h('button', { className: 'kgm-btn', onClick: async () => {
+            try {
+              await api(API + '/cookie', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cookie: '' }) })
+              setHasCookie(false)
+            } catch { /* ignore */ }
+          }, title: '清除' }, '清除'),
           h('span', { className: 'kgm-small', style: { margin: 0, marginLeft: 'auto' } }, '只存本机 ~/.dsh'),
         ),
       )
 
-      const settingsBody = h(
+      return h(
         'div',
         { className: 'kgm-settings' },
         h(
           'div',
           { className: 'kgm-subtabs' },
-          h('button', { className: 'kgm-subtab' + (settingsTab === 'look' ? ' kgm-on' : ''), onClick: () => setSettingsTab('look') }, '外观'),
-          h('button', { className: 'kgm-subtab' + (settingsTab === 'account' ? ' kgm-on' : ''), onClick: () => setSettingsTab('account') }, '账号'),
+          h('button', { className: 'kgm-subtab' + (sub === 'look' ? ' kgm-on' : ''), onClick: () => setSub('look') }, '外观'),
+          h('button', { className: 'kgm-subtab' + (sub === 'account' ? ' kgm-on' : ''), onClick: () => setSub('account') }, '账号'),
         ),
-        settingsTab === 'look' ? lookSettings : accountSettings,
+        sub === 'look' ? look : account,
       )
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Dock 版：输入框上方，可锁定 / 拖动                                   */
+    /* ------------------------------------------------------------------ */
+    function KugouDock() {
+      const cfg = useSettings()
+      const p = usePlayer()
+      const profile = useProfile()
+      const [expanded, setExpanded] = useState(false)
+      const [tab, setTab] = useState('search')
+      const [drag, setDrag] = useState(null)
+      const barRef = useRef(null)
+      const lyricRef = useRef(null)
+      const dragInfo = useRef(null)
+
+      useEffect(() => {
+        if (cfg.ui !== 'dock' || cfg.dockLocked) {
+          dragInfo.current = null
+          setDrag(null)
+        }
+      }, [cfg.ui, cfg.dockLocked])
+
+      const startDrag = useCallback((e) => {
+        if (!barRef.current || cfg.dockLocked) return
+        if (e.target.closest('button, input, textarea')) return
+        const rect = barRef.current.getBoundingClientRect()
+        dragInfo.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top, w: rect.width }
+        setDrag({ x: rect.left, y: rect.top })
+        e.preventDefault()
+      }, [cfg.dockLocked])
+
+      useEffect(() => {
+        if (!drag) return
+        const move = (e) => {
+          if (!dragInfo.current) return
+          const x = Math.max(0, Math.min(window.innerWidth - 120, e.clientX - dragInfo.current.dx))
+          const y = Math.max(0, Math.min(window.innerHeight - 60, e.clientY - dragInfo.current.dy))
+          setDrag({ x, y })
+        }
+        const up = () => {
+          setDrag((d) => {
+            if (d) settings.update({ dockPos: { x: Math.round(d.x), y: Math.round(d.y) } })
+            return d
+          })
+          dragInfo.current = null
+        }
+        window.addEventListener('pointermove', move)
+        window.addEventListener('pointerup', up)
+        return () => {
+          window.removeEventListener('pointermove', move)
+          window.removeEventListener('pointerup', up)
+        }
+      }, [drag])
+
+      if (cfg.ui !== 'dock') return null
+
+      const progress = p.dur > 0 ? Math.min(100, (p.cur / p.dur) * 100) : 0
+      const floating = !cfg.dockLocked
+      const pos = drag || cfg.dockPos
+      const wrapStyle = {}
+      let wrapClass = 'kgm-root'
+      if (floating) {
+        wrapClass += ' kgm-floating'
+        wrapStyle.left = pos ? pos.x + 'px' : '50%'
+        wrapStyle.top = pos ? pos.y + 'px' : 'auto'
+        wrapStyle.bottom = pos ? 'auto' : '90px'
+        if (!pos) wrapStyle.transform = 'translateX(-50%)'
+      }
+
+      const onSeek = (e) => {
+        const el = e.currentTarget
+        const rect = el.getBoundingClientRect()
+        player.seekTo((e.clientX - rect.left) / rect.width)
+      }
 
       return h(
         'div',
-        { className: 'kgm-root', 'data-theme': theme, style: { '--kgm-brand': accent } },
+        { className: wrapClass, 'data-theme': cfg.theme, style: { ...wrapStyle, '--kgm-brand': cfg.accent } },
         h('style', null, CSS),
-
+        floating ? h('div', { className: 'kgm-dock-spacer' }) : null,
         expanded
           ? h(
               'div',
@@ -914,18 +1106,20 @@ window.__ModuleLoader__.load({
                   { className: 'kgm-tabs' },
                   h('button', { className: 'kgm-tab' + (tab === 'search' ? ' kgm-on' : ''), onClick: () => setTab('search') }, '搜歌'),
                   h('button', { className: 'kgm-tab' + (tab === 'playlist' ? ' kgm-on' : ''), onClick: () => setTab('playlist') }, '歌单'),
-                  h('button', { className: 'kgm-tab' + (tab === 'queue' ? ' kgm-on' : ''), onClick: () => setTab('queue') }, '队列' + (queue.length ? ' · ' + queue.length : '')),
-                  h(
-                    'button',
-                    { className: 'kgm-btn', style: { marginLeft: 'auto' }, onClick: () => setTab(tab === 'settings' ? 'search' : 'settings'), title: '设置' },
-                    Icon.gear(),
-                  ),
+                  h('button', { className: 'kgm-tab' + (tab === 'queue' ? ' kgm-on' : ''), onClick: () => setTab('queue') }, '队列' + (p.queue.length ? ' · ' + p.queue.length : '')),
+                  profile.loggedIn
+                    ? h('span', { className: 'kgm-row', style: { marginLeft: 'auto', gap: 4 } },
+                        h('img', { className: 'kgm-avatar', style: { width: 20, height: 20 }, src: API + '/avatar?url=' + encodeURIComponent(profile.avatar) }),
+                        h('span', { className: 'kgm-uid', style: { maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } }, profile.nick || profile.userid),
+                      )
+                    : null,
+                  h('button', { className: 'kgm-btn' + (profile.loggedIn || p.queue.length ? '' : ''), style: { marginLeft: profile.loggedIn ? 4 : 'auto' }, onClick: () => setTab(tab === 'settings' ? 'search' : 'settings'), title: '设置' }, Icon.gear()),
+                  h('button', { className: 'kgm-btn', onClick: () => setExpanded(false), title: '收起' }, Icon.down()),
                 ),
-                error ? h('div', { className: 'kgm-err' }, error) : null,
-                tab === 'settings' ? settingsBody : null,
-                tab === 'search' ? searchBody : null,
-                tab === 'playlist' ? playlistBody : null,
-                tab === 'queue' ? queueBody : null,
+                p.error ? h('div', { className: 'kgm-err' }, p.error) : null,
+                tab === 'settings'
+                  ? h(Settings, { profile })
+                  : h(Library, { tab }),
               ),
               h(
                 'div',
@@ -933,48 +1127,160 @@ window.__ModuleLoader__.load({
                 h(
                   'div',
                   { className: 'kgm-lyric-head' },
-                  h('span', null, lyric.meta && lyric.meta.title ? lyric.meta.title : '歌词'),
-                  h('span', null, lyric.meta && lyric.meta.wordByWord ? '逐字' : lyric.lines.length ? 'LRC' : ''),
+                  h('span', null, p.lyric.meta && p.lyric.meta.title ? p.lyric.meta.title : '歌词'),
+                  h('span', null, p.lyric.meta && p.lyric.meta.wordByWord ? '逐字' : p.lyric.lines.length ? 'LRC' : ''),
                 ),
-                h(
-                  'div',
-                  { className: 'kgm-lyric-box', ref: lyricRef },
-                  lyric.lines.length
-                    ? lyric.lines.map(renderLine)
-                    : h('div', { className: 'kgm-hint' }, song ? '这首暂时没有歌词数据' : '播放歌曲后这里显示歌词'),
-                ),
+                h('div', { className: 'kgm-lyric-box', ref: lyricRef }, h(LyricView, { lyric: p.lyric, cur: p.cur, boxRef: lyricRef })),
               ),
             )
           : null,
-
         h(
           'div',
-          { className: 'kgm-bar' },
+          { className: 'kgm-bar', ref: barRef, onPointerDown: startDrag },
           h('button', { className: 'kgm-btn', onClick: () => setExpanded((v) => !v), title: expanded ? '收起' : '展开' }, expanded ? Icon.down() : Icon.up()),
-          h('div', { className: 'kgm-cover' + (playing ? ' kgm-spin' : '') }, playing ? '' : '♫'),
+          h('div', { className: 'kgm-cover' + (p.playing ? ' kgm-spin' : '') }, p.playing ? '' : '♫'),
           h(
             'div',
             { className: 'kgm-meta' },
-            song ? h('div', { className: 'kgm-title' }, song.name) : h('div', { className: 'kgm-empty-meta' }, '酷狗 · 未播放'),
-            song ? h('div', { className: 'kgm-singer' }, song.singer || (song.localPath ? '本地文件' : '')) : null,
+            p.song ? h('div', { className: 'kgm-title' }, p.song.name) : h('div', { className: 'kgm-empty-meta' }, '酷狗 · 未播放'),
+            p.song ? h('div', { className: 'kgm-singer' }, p.song.singer || (p.song.localPath ? '本地文件' : '')) : null,
           ),
           h(
             'div',
             { className: 'kgm-progress' },
             h(
               'div',
-              { className: 'kgm-track', onClick: seek, title: '点击跳转' },
+              { className: 'kgm-track', onClick: onSeek, title: '点击跳转' },
               h('div', { className: 'kgm-track-bar' }),
               h('div', { className: 'kgm-track-fill', style: { width: progress + '%' } }),
               h('div', { className: 'kgm-thumb', style: { left: progress + '%' } }),
             ),
-            h('span', { className: 'kgm-time' }, fmt(cur) + ' / ' + fmt(dur)),
+            h('span', { className: 'kgm-time' }, fmt(p.cur) + ' / ' + fmt(p.dur)),
           ),
-          h('button', { className: 'kgm-btn', onClick: prev, disabled: !queue.length, title: '上一首' }, Icon.prev()),
-          h('button', { className: 'kgm-main', onClick: toggle, title: playing ? '暂停' : '播放' }, playing ? Icon.pause() : Icon.play()),
-          h('button', { className: 'kgm-btn', onClick: next, disabled: !queue.length, title: '下一首' }, Icon.next()),
-          h('input', { className: 'kgm-volume', type: 'range', min: 0, max: 1, step: 0.01, value: volume, onChange: changeVolume, title: '音量' }),
+          h('button', { className: 'kgm-btn', onClick: player.prev, disabled: !p.queue.length, title: '上一首' }, Icon.prev()),
+          h('button', { className: 'kgm-main', onClick: player.toggle, title: p.playing ? '暂停' : '播放' }, p.playing ? Icon.pause() : Icon.play()),
+          h('button', { className: 'kgm-btn', onClick: player.next, disabled: !p.queue.length, title: '下一首' }, Icon.next()),
+          h('input', { className: 'kgm-volume', type: 'range', min: 0, max: 1, step: 0.01, value: p.volume, onChange: (e) => player.setVolume(Number(e.target.value)), title: '音量' }),
+          h('button', {
+            className: 'kgm-btn' + (cfg.dockLocked ? ' kgm-locked' : ''),
+            onClick: () => settings.update({ dockLocked: !cfg.dockLocked }),
+            title: cfg.dockLocked ? '已锁定：点击解锁拖动' : '未锁定：可拖动',
+          }, Icon.lock(cfg.dockLocked)),
+          !cfg.dockLocked
+            ? h('button', { className: 'kgm-btn', onClick: () => { setDrag(null); settings.update({ dockPos: null }) }, title: '复位位置' }, Icon.reset())
+            : null,
           h('button', { className: 'kgm-btn', onClick: () => { setExpanded(true); setTab('search') }, title: '搜歌' }, Icon.search()),
+        ),
+      )
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* 侧边栏版                                                             */
+    /* ------------------------------------------------------------------ */
+    function KugouSide() {
+      const cfg = useSettings()
+      const p = usePlayer()
+      const profile = useProfile()
+      const [tab, setTab] = useState('search')
+      const lyricRef = useRef(null)
+
+      if (cfg.ui !== 'side') return null
+
+      const progress = p.dur > 0 ? Math.min(100, (p.cur / p.dur) * 100) : 0
+      const onSeek = (e) => {
+        const rect = e.currentTarget.getBoundingClientRect()
+        player.seekTo((e.clientX - rect.left) / rect.width)
+      }
+
+      if (cfg.sideCollapsed) {
+        return h(
+          'div',
+          { className: 'kgm-side kgm-collapsed', 'data-theme': cfg.theme, style: { '--kgm-brand': cfg.accent } },
+          h('style', null, CSS),
+          h(
+            'div',
+            { className: 'kgm-collapsed-body' },
+            h('button', { className: 'kgm-btn', onClick: () => settings.update({ sideCollapsed: false }), title: '展开' }, Icon.expand()),
+            h('div', { className: 'kgm-side-cover' + (p.playing ? ' kgm-spin' : ''), title: p.song ? p.song.name : '酷狗' }, p.playing ? '' : '♫'),
+            h('button', { className: 'kgm-main', onClick: player.toggle, title: p.playing ? '暂停' : '播放', style: { width: 30, height: 30 } }, p.playing ? Icon.pause() : Icon.play()),
+          ),
+        )
+      }
+
+      return h(
+        'div',
+        { className: 'kgm-side', 'data-theme': cfg.theme, style: { '--kgm-brand': cfg.accent } },
+        h('style', null, CSS),
+        h(
+          'div',
+          { className: 'kgm-side-head' },
+          profile.loggedIn && profile.avatar
+            ? h('img', { className: 'kgm-avatar', src: API + '/avatar?url=' + encodeURIComponent(profile.avatar), alt: '' })
+            : h('div', { className: 'kgm-avatar kgm-avatar-empty' }, '♫'),
+          h(
+            'div',
+            { style: { minWidth: 0, flex: 1 } },
+            h('div', { className: 'kgm-nick' }, profile.loggedIn ? profile.nick || '酷狗用户' : '未登录'),
+            h('div', { className: 'kgm-uid' }, profile.loggedIn ? 'UID ' + profile.userid : '在设置 → 账号里填 Cookie'),
+          ),
+          h('button', { className: 'kgm-btn', onClick: () => setTab('settings'), title: '设置' }, Icon.gear()),
+          h('button', { className: 'kgm-btn', onClick: () => settings.update({ sideCollapsed: true }), title: '收起' }, Icon.collapse()),
+        ),
+        h(
+          'div',
+          { className: 'kgm-side-tabs' },
+          h('button', { className: 'kgm-tab' + (tab === 'search' ? ' kgm-on' : ''), onClick: () => setTab('search') }, '搜歌'),
+          h('button', { className: 'kgm-tab' + (tab === 'playlist' ? ' kgm-on' : ''), onClick: () => setTab('playlist') }, '歌单'),
+          h('button', { className: 'kgm-tab' + (tab === 'queue' ? ' kgm-on' : ''), onClick: () => setTab('queue') }, '队列' + (p.queue.length ? ' · ' + p.queue.length : '')),
+        ),
+        p.error ? h('div', { className: 'kgm-err' }, p.error) : null,
+        h(
+          'div',
+          { className: 'kgm-side-body' },
+          tab === 'settings' ? h(Settings, { profile }) : h(Library, { tab, compact: true }),
+        ),
+        h(
+          'div',
+          { className: 'kgm-side-lyric' },
+          h('div', { className: 'kgm-lyric-head' }, h('span', null, p.lyric.meta && p.lyric.meta.title ? p.lyric.meta.title : '歌词'), h('span', null, p.lyric.meta && p.lyric.meta.wordByWord ? '逐字' : '')),
+          h('div', { className: 'kgm-lyric-box', ref: lyricRef }, h(LyricView, { lyric: p.lyric, cur: p.cur, boxRef: lyricRef })),
+        ),
+        h(
+          'div',
+          { className: 'kgm-side-player' },
+          h(
+            'div',
+            { className: 'kgm-row', style: { marginBottom: 6 } },
+            h('div', { className: 'kgm-side-cover' + (p.playing ? ' kgm-spin' : '') }, p.playing ? '' : '♫'),
+            h(
+              'div',
+              { style: { minWidth: 0, flex: 1 } },
+              h('div', { className: 'kgm-title' }, p.song ? p.song.name : '酷狗 · 未播放'),
+              h('div', { className: 'kgm-singer' }, p.song ? p.song.singer || (p.song.localPath ? '本地文件' : '') : ''),
+            ),
+            h('button', { className: 'kgm-btn', onClick: player.prev, disabled: !p.queue.length, title: '上一首' }, Icon.prev()),
+            h('button', { className: 'kgm-main', onClick: player.toggle, title: p.playing ? '暂停' : '播放' }, p.playing ? Icon.pause() : Icon.play()),
+            h('button', { className: 'kgm-btn', onClick: player.next, disabled: !p.queue.length, title: '下一首' }, Icon.next()),
+          ),
+          h(
+            'div',
+            { className: 'kgm-row' },
+            h('span', { className: 'kgm-time' }, fmt(p.cur)),
+            h(
+              'div',
+              { className: 'kgm-track', onClick: onSeek, style: { flex: 1 } },
+              h('div', { className: 'kgm-track-bar' }),
+              h('div', { className: 'kgm-track-fill', style: { width: progress + '%' } }),
+              h('div', { className: 'kgm-thumb', style: { left: progress + '%' } }),
+            ),
+            h('span', { className: 'kgm-time' }, fmt(p.dur)),
+          ),
+          h(
+            'div',
+            { className: 'kgm-row' },
+            h('button', { className: 'kgm-btn', onClick: () => settings.update({ ui: 'dock' }), title: '切换到输入框播放条' }, Icon.search()),
+            h('input', { className: 'kgm-volume', type: 'range', min: 0, max: 1, step: 0.01, value: p.volume, onChange: (e) => player.setVolume(Number(e.target.value)), style: { flex: 1, width: 'auto' } }),
+          ),
         ),
       )
     }
@@ -988,6 +1294,12 @@ window.__ModuleLoader__.load({
           slots.register(
             { name: 'conversation.input.dock', id: 'kugou-music', order: 15, label: '酷狗音乐' },
             () => h(KugouDock),
+          ),
+        )
+        slots.inject('shell.overlay', () =>
+          slots.register(
+            { name: 'shell.overlay', id: 'kugou-music-side', order: 900 },
+            () => h(KugouSide),
           ),
         )
       },

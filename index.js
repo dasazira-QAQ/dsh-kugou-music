@@ -21,6 +21,7 @@ import {
   KugouError,
   fetchLyric,
   fetchPlaylist,
+  parseKuGooCredential,
   resolvePlayUrl,
   searchSongs,
 } from './lib/kugou.js'
@@ -277,6 +278,51 @@ export function mountRoutes(webServer, ctx) {
           const duration = Number(url.searchParams.get('duration')) || 0
           const result = await fetchLyric(hash, duration, { cookie })
           json(res, 200, { ok: true, ...result })
+          return
+        }
+        if (sub === 'profile' && req.method === 'GET') {
+          const cred = parseKuGooCredential(cookie)
+          json(res, 200, {
+            ok: true,
+            loggedIn: Boolean(cred.token),
+            userid: cred.userid,
+            nick: cred.nick,
+            avatar: cred.pic,
+          })
+          return
+        }
+        if (sub === 'avatar' && req.method === 'GET') {
+          // 头像走同源代理，避免酷狗图床的防盗链与跨域
+          const target = url.searchParams.get('url') || ''
+          let origin
+          try {
+            origin = new URL(target)
+          } catch {
+            res.writeHead(400)
+            res.end()
+            return
+          }
+          const okHost = origin.hostname === 'kugou.com' || origin.hostname.endsWith('.kugou.com')
+          if (!/^https?:$/.test(origin.protocol) || !okHost) {
+            res.writeHead(403)
+            res.end()
+            return
+          }
+          const img = await fetch(origin.href, {
+            headers: {
+              'User-Agent':
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+              Referer: 'https://www.kugou.com/',
+            },
+          })
+          const type = img.headers.get('content-type') || 'image/jpeg'
+          const buf = Buffer.from(await img.arrayBuffer())
+          res.writeHead(img.status === 200 ? 200 : 502, {
+            'Content-Type': type,
+            'Content-Length': buf.length,
+            'Cache-Control': 'max-age=3600',
+          })
+          res.end(buf)
           return
         }
         if (sub === 'cookie' && req.method === 'GET') {
