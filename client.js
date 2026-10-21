@@ -441,6 +441,7 @@ window.__ModuleLoader__.load({
         ui: initial.ui === 'side' ? 'side' : 'dock',
         dockLocked: initial.dockLocked !== false,
         dockPos: initial.dockPos || null,
+        dockWidth: ['full', 'wide', 'slim'].includes(initial.dockWidth) ? initial.dockWidth : 'full',
         // 每次打开 DSH 都从收起的圆形气泡开始
         sideCollapsed: true,
         bgOpacity: typeof initial.bgOpacity === 'number' ? initial.bgOpacity : 0.86,
@@ -1453,6 +1454,21 @@ window.__ModuleLoader__.load({
             h('div', { className: 'kgm-mode-desc' }, '固定左侧，带歌词面板'),
           ),
         ),
+        cfg.ui === 'dock'
+          ? h(
+              'div',
+              { style: { marginBottom: 12 } },
+              h('div', { className: 'kgm-section-title' }, '播放条宽度'),
+              h(
+                'div',
+                { className: 'kgm-modes-mini' },
+                h('button', { className: 'kgm-mode-pill' + (cfg.dockWidth === 'full' ? ' kgm-on' : ''), onClick: () => settings.update({ dockWidth: 'full' }) }, '贴合对话框'),
+                h('button', { className: 'kgm-mode-pill' + (cfg.dockWidth === 'wide' ? ' kgm-on' : ''), onClick: () => settings.update({ dockWidth: 'wide' }) }, '略窄'),
+                h('button', { className: 'kgm-mode-pill' + (cfg.dockWidth === 'slim' ? ' kgm-on' : ''), onClick: () => settings.update({ dockWidth: 'slim' }) }, '紧凑'),
+              ),
+              h('div', { className: 'kgm-small' }, '调整播放条与输入框的对齐宽度，锁定和悬浮状态都生效。'),
+            )
+          : null,
         h('div', { className: 'kgm-section-title' }, '播放模式'),
         h(
           'div',
@@ -1521,35 +1537,41 @@ window.__ModuleLoader__.load({
           }),
           h('span', { className: 'kgm-opacity-val' }, Math.round(cfg.bgOpacity * 100) + '%'),
         ),
-        h('div', { className: 'kgm-section-title' }, '气泡歌词'),
-        h(
-          'div',
-          { className: 'kgm-opacity', style: { marginBottom: 8 } },
-          h('span', { className: 'kgm-small', style: { margin: 0, width: 40, flex: 'none' } }, '行数'),
-          h('input', {
-            type: 'range',
-            min: 1,
-            max: 4,
-            step: 1,
-            value: cfg.bubbleLines,
-            onChange: (e) => settings.update({ bubbleLines: Number(e.target.value) }),
-          }),
-          h('span', { className: 'kgm-opacity-val' }, cfg.bubbleLines + ' 行'),
-        ),
-        h(
-          'div',
-          { className: 'kgm-opacity', style: { marginBottom: 12 } },
-          h('span', { className: 'kgm-small', style: { margin: 0, width: 40, flex: 'none' } }, '字号'),
-          h('input', {
-            type: 'range',
-            min: 10,
-            max: 16,
-            step: 1,
-            value: cfg.bubbleFontSize,
-            onChange: (e) => settings.update({ bubbleFontSize: Number(e.target.value) }),
-          }),
-          h('span', { className: 'kgm-opacity-val' }, cfg.bubbleFontSize + 'px'),
-        ),
+        cfg.ui === 'side'
+          ? h(
+              'div',
+              null,
+              h('div', { className: 'kgm-section-title' }, '气泡歌词（收起成气泡时生效）'),
+              h(
+                'div',
+                { className: 'kgm-opacity', style: { marginBottom: 8 } },
+                h('span', { className: 'kgm-small', style: { margin: 0, width: 40, flex: 'none' } }, '行数'),
+                h('input', {
+                  type: 'range',
+                  min: 1,
+                  max: 4,
+                  step: 1,
+                  value: cfg.bubbleLines,
+                  onChange: (e) => settings.update({ bubbleLines: Number(e.target.value) }),
+                }),
+                h('span', { className: 'kgm-opacity-val' }, cfg.bubbleLines + ' 行'),
+              ),
+              h(
+                'div',
+                { className: 'kgm-opacity', style: { marginBottom: 12 } },
+                h('span', { className: 'kgm-small', style: { margin: 0, width: 40, flex: 'none' } }, '字号'),
+                h('input', {
+                  type: 'range',
+                  min: 10,
+                  max: 16,
+                  step: 1,
+                  value: cfg.bubbleFontSize,
+                  onChange: (e) => settings.update({ bubbleFontSize: Number(e.target.value) }),
+                }),
+                h('span', { className: 'kgm-opacity-val' }, cfg.bubbleFontSize + 'px'),
+              ),
+            )
+          : null,
         h(
           'label',
           { className: 'kgm-switch', style: { marginBottom: 12 } },
@@ -1775,13 +1797,20 @@ window.__ModuleLoader__.load({
           ? `rgba(26,28,36,${cfg.bgOpacity})`
           : `rgba(255,255,255,${cfg.bgOpacity})`
       const wrapStyle = { '--kgm-bg': dockBg, '--kgm-panel-bg': dockPanelBg }
+      // 播放条宽度预设：贴合对话框 / 略窄 / 紧凑
+      const DOCK_WIDTH = { full: [100, 680], wide: [90, 600], slim: [76, 500] }
+      const dockW = DOCK_WIDTH[cfg.dockWidth] || DOCK_WIDTH.full
       let wrapClass = 'kgm-root'
       if (floating) {
         wrapClass += ' kgm-floating'
+        wrapStyle.width = `min(${dockW[1]}px, 92vw)`
         wrapStyle.left = pos ? pos.x + 'px' : '50%'
         wrapStyle.top = pos ? pos.y + 'px' : 'auto'
         wrapStyle.bottom = pos ? 'auto' : '90px'
         if (!pos) wrapStyle.transform = 'translateX(-50%)'
+      } else if (dockW[0] < 100) {
+        wrapStyle.width = dockW[0] + '%'
+        wrapStyle.margin = '0 auto'
       }
 
       const onSeek = (e) => {
