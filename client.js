@@ -437,6 +437,7 @@ window.__ModuleLoader__.load({
         profileVersion: 0,
         bubbleLines: Math.min(4, Math.max(1, Number(initial.bubbleLines) || 2)),
         bubbleFontSize: Math.min(16, Math.max(10, Number(initial.bubbleFontSize) || 12)),
+        hotkeysWhileTyping: initial.hotkeysWhileTyping !== false,
         lyricSidebar: initial.lyricSidebar === true,
         bubbleLocked: initial.bubbleLocked !== false,
         bubblePos: initial.bubblePos || null,
@@ -833,13 +834,21 @@ window.__ModuleLoader__.load({
 
     let hotkeyRecording = false
 
+    /** 热键里是否带 Ctrl/Alt/Shift/Meta。 */
+    function comboHasModifier(combo) {
+      return String(combo || '')
+        .split('+')
+        .slice(0, -1)
+        .some((m) => ['Ctrl', 'Alt', 'Shift', 'Meta'].includes(m.trim()))
+    }
+
     function bindHotkeys() {
       window.addEventListener(
         'keydown',
         (e) => {
           if (hotkeyRecording) return
           const t = e.target
-          if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+          const typing = Boolean(t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable))
           const hk = settings.state.hotkeys || {}
           const acts = [
             ['toggle', () => player.toggle()],
@@ -847,12 +856,17 @@ window.__ModuleLoader__.load({
             ['prev', () => player.prev()],
           ]
           for (const [name, run] of acts) {
-            if (hk[name] && comboMatches(e, hk[name])) {
-              e.preventDefault()
-              e.stopPropagation()
-              run()
-              return
+            if (!hk[name] || !comboMatches(e, hk[name])) continue
+            if (typing) {
+              // 打字时：开关关掉就一律不响应；开着也只放行带修饰键的组合，
+              // 免得空格/方向键这种单键把输入吃掉
+              if (!settings.state.hotkeysWhileTyping) return
+              if (!comboHasModifier(hk[name])) return
             }
+            e.preventDefault()
+            e.stopPropagation()
+            run()
+            return
           }
         },
         true,
@@ -1419,6 +1433,16 @@ window.__ModuleLoader__.load({
           }),
         ),
         h('div', { className: 'kgm-small' }, '点按钮后直接按键；单键只支持 F1-F12 / 方向键 / 空格等，其余请用组合键。'),
+        h(
+          'label',
+          { className: 'kgm-switch', style: { marginTop: 4 } },
+          h('input', {
+            type: 'checkbox',
+            checked: cfg.hotkeysWhileTyping,
+            onChange: (e) => settings.update({ hotkeysWhileTyping: e.target.checked }),
+          }),
+          h('span', { className: 'kgm-switch-text' }, '在输入框打字时也响应组合键（仅 Ctrl / Alt / Shift 组合）'),
+        ),
         h('div', { className: 'kgm-section-title' }, '背景'),
         h(
           'div',
