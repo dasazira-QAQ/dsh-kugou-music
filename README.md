@@ -70,11 +70,14 @@
 标准 DSH bundle（`dsh.bundle.patch` + `dsh.client`）。
 
 ```bash
-# 从本地目录
+# 从 npm 安装（推荐）
+dsh plugin --profile <你的 profile> add dsh-kugou-music
+
+# 或从本地目录
 dsh plugin --profile <你的 profile> add "file:/绝对路径/dsh-kugou-music"
 ```
 
-或手动：把本目录放进 profile 的 `node_modules/`，在 profile `package.json` 的 `dependencies` 加
+也可手动：把本目录放进 profile 的 `node_modules/`，在 profile `package.json` 的 `dependencies` 加
 `"dsh-kugou-music": "link:<绝对路径>"`、`dsh.profile.bundles` 加 `"dsh-kugou-music"`。
 
 装完**完全退出 DSH 再打开**。
