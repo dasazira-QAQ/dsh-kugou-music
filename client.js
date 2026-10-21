@@ -264,6 +264,14 @@ window.__ModuleLoader__.load({
 .kgm-song.kgm-current { background: color-mix(in srgb, var(--kgm-brand) 14%, transparent); }
 .kgm-idx { width: 18px; text-align: right; font-size: 11px; color: var(--kgm-dim); flex: none; font-variant-numeric: tabular-nums; }
 .kgm-song-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kgm-del {
+  width: 22px; height: 22px; flex: none; border: 0; border-radius: 6px;
+  background: transparent; color: var(--kgm-dim); cursor: pointer;
+  font-size: 15px; line-height: 1; opacity: 0;
+  transition: opacity .15s, background .15s, color .15s;
+}
+.kgm-song:hover .kgm-del { opacity: .65; }
+.kgm-del:hover { opacity: 1; background: rgba(220, 80, 70, .16); color: #e05a4e; }
 .kgm-song-singer { font-size: 11px; color: var(--kgm-dim); max-width: 30%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .kgm-tag { flex: none; font-size: 10px; padding: 1px 5px; border-radius: 4px; background: rgba(52,168,83,.16); color: #2e9e4f; }
 .kgm-tag-vip { background: rgba(220,120,40,.16); color: #c26a20; }
@@ -787,6 +795,28 @@ window.__ModuleLoader__.load({
         return added.length
       }
 
+      /** 从队列里删掉一首；删的是当前播放的那首就停下。 */
+      function removeAt(idx) {
+        if (idx < 0 || idx >= state.queue.length) return
+        state.queue = state.queue.filter((_, i) => i !== idx)
+        if (state.index === idx) {
+          state.index = -1
+          state.song = null
+          state.playing = false
+          state.cur = 0
+          state.dur = 0
+          state.lyric = { lines: [], meta: {} }
+          if (audio) {
+            audio.pause()
+            audio.src = ''
+          }
+        } else if (state.index > idx) {
+          state.index -= 1
+        }
+        persistQueue()
+        emit()
+      }
+
       return {
         state,
         subscribe(fn) {
@@ -801,6 +831,7 @@ window.__ModuleLoader__.load({
         setVolume,
         setQueue,
         appendQueue,
+        removeAt,
       }
     }
 
@@ -923,13 +954,21 @@ window.__ModuleLoader__.load({
     /* ------------------------------------------------------------------ */
     /* 通用小组件                                                           */
     /* ------------------------------------------------------------------ */
-    function SongRow({ song, i, listKey, current, showIdx, onPick }) {
+    function SongRow({ song, i, listKey, current, showIdx, onPick, onRemove }) {
       const isCurrent = current
       return h(
-        'button',
+        'div',
         {
           className: 'kgm-song' + (isCurrent ? ' kgm-current' : ''),
+          role: 'button',
+          tabIndex: 0,
           onClick: () => onPick(song, listKey),
+          onKeyDown: (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onPick(song, listKey)
+            }
+          },
           title: (song.name || '') + (song.singer ? ' - ' + song.singer : ''),
         },
         showIdx ? h('span', { className: 'kgm-idx' }, String(i + 1)) : null,
@@ -940,6 +979,20 @@ window.__ModuleLoader__.load({
           : song.free === false
             ? h('span', { className: 'kgm-tag kgm-tag-vip' }, 'VIP')
             : h('span', { className: 'kgm-tag' }, '免费'),
+        onRemove
+          ? h(
+              'button',
+              {
+                className: 'kgm-del',
+                onClick: (e) => {
+                  e.stopPropagation()
+                  onRemove(i)
+                },
+                title: '从队列移除',
+              },
+              '×',
+            )
+          : null,
       )
     }
 
@@ -1339,7 +1392,7 @@ window.__ModuleLoader__.load({
         { className: 'kgm-list' },
         p.queue.length
           ? p.queue.map((s, i) =>
-              h(SongRow, { key: (s.hash || s.localPath || 'q') + i, song: s, i, listKey: 'queue', current: currentKey === (s.hash || s.localPath), showIdx: true, onPick: pick }),
+              h(SongRow, { key: (s.hash || s.localPath || 'q') + i, song: s, i, listKey: 'queue', current: currentKey === (s.hash || s.localPath), showIdx: true, onPick: pick, onRemove: (idx) => player.removeAt(idx) }),
             )
           : h('div', { className: 'kgm-hint' }, '队列还是空的，先去搜几首歌。'),
       )
@@ -1626,9 +1679,24 @@ window.__ModuleLoader__.load({
       const [expanded, setExpanded] = useState(false)
       const [tab, setTab] = useState('search')
       const [drag, setDrag] = useState(null)
+      const [panelH, setPanelH] = useState(460)
       const barRef = useRef(null)
       const lyricRef = useRef(null)
       const dragInfo = useRef(null)
+
+      // 面板向上展开，按播放条到视口顶部的距离限制高度，避免顶部被裁掉
+      useEffect(() => {
+        if (!expanded) return
+        const calc = () => {
+          const el = barRef.current
+          if (!el) return
+          const rect = el.getBoundingClientRect()
+          setPanelH(Math.max(240, Math.min(460, Math.round(rect.top - 26))))
+        }
+        calc()
+        window.addEventListener('resize', calc)
+        return () => window.removeEventListener('resize', calc)
+      }, [expanded])
 
       useEffect(() => {
         if (cfg.ui !== 'dock' || cfg.dockLocked) {
@@ -1679,7 +1747,19 @@ window.__ModuleLoader__.load({
       const progress = p.dur > 0 ? Math.min(100, (p.cur / p.dur) * 100) : 0
       const floating = !cfg.dockLocked
       const pos = drag || cfg.dockPos
-      const wrapStyle = {}
+      // 透明度设置要作用到播放条和展开菜单，透明模式则都清掉
+      const transparent = cfg.bgMode === 'transparent'
+      const dockBg = transparent
+        ? 'transparent'
+        : cfg.theme === 'dark'
+          ? `rgba(24,26,33,${cfg.bgOpacity})`
+          : `rgba(255,255,255,${cfg.bgOpacity})`
+      const dockPanelBg = transparent
+        ? 'transparent'
+        : cfg.theme === 'dark'
+          ? `rgba(26,28,36,${cfg.bgOpacity})`
+          : `rgba(255,255,255,${cfg.bgOpacity})`
+      const wrapStyle = { '--kgm-bg': dockBg, '--kgm-panel-bg': dockPanelBg }
       let wrapClass = 'kgm-root'
       if (floating) {
         wrapClass += ' kgm-floating'
@@ -1702,7 +1782,7 @@ window.__ModuleLoader__.load({
         expanded
           ? h(
               'div',
-              { className: 'kgm-panel' },
+              { className: 'kgm-panel', style: { height: panelH } },
               h(
                 'div',
                 { className: 'kgm-left' },
