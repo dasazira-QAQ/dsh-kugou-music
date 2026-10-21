@@ -38,6 +38,14 @@
     "lyrics",
     "player"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dasazira-QAQ/dsh-kugou-music.git"
+  },
+  "homepage": "https://github.com/dasazira-QAQ/dsh-kugou-music#readme",
+  "bugs": {
+    "url": "https://github.com/dasazira-QAQ/dsh-kugou-music/issues"
+  },
   "license": "MIT",
   "engines": {
     "node": ">=22.13.0"
