@@ -1720,10 +1720,12 @@ window.__ModuleLoader__.load({
       // 绝对定位向上展开会被切掉顶部，fixed 才能完整显示
       useEffect(() => {
         if (!expanded) return
+        const el = barRef.current
+        if (!el) return
         const calc = () => {
-          const el = barRef.current
-          if (!el) return
-          const r = el.getBoundingClientRect()
+          const target = barRef.current
+          if (!target) return
+          const r = target.getBoundingClientRect()
           const h = Math.max(240, Math.min(460, Math.round(r.top - 26)))
           setPanelBox({
             left: Math.round(r.left),
@@ -1732,14 +1734,20 @@ window.__ModuleLoader__.load({
             bottom: Math.round(window.innerHeight - r.top + 10),
           })
         }
-        calc()
+        // 宽度预设切换后先等一帧让播放条完成布局，再量尺寸
+        const raf = requestAnimationFrame(calc)
+        // 容器/播放条尺寸任何变化都实时跟随（改宽度预设、拖窗口都算）
+        const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(calc) : null
+        if (ro) ro.observe(el)
         window.addEventListener('resize', calc)
         window.addEventListener('scroll', calc, true)
         return () => {
+          cancelAnimationFrame(raf)
+          if (ro) ro.disconnect()
           window.removeEventListener('resize', calc)
           window.removeEventListener('scroll', calc, true)
         }
-      }, [expanded, drag, cfg.ui, cfg.dockLocked])
+      }, [expanded, drag, cfg.ui, cfg.dockLocked, cfg.dockWidth])
 
       useEffect(() => {
         if (cfg.ui !== 'dock' || cfg.dockLocked) {
