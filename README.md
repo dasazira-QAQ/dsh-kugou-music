@@ -4,6 +4,28 @@
 
 > 非官方插件。所有接口来自酷狗公开 Web 接口，仅供个人学习自用，请尊重版权。
 
+## 截图
+
+**输入框播放条** —— 常驻输入框上方，逐字歌词 + 翻译，点 `^` 展开面板
+
+![输入框播放条](assets/player-bar.jpg)
+
+<p align="center">
+  <img src="assets/sidebar.jpg" width="30%" alt="左侧边栏">
+  &nbsp;&nbsp;
+  <img src="assets/settings.jpg" width="30%" alt="设置面板">
+  &nbsp;&nbsp;
+  <img src="assets/bubble.jpg" width="18%" alt="气泡模式">
+</p>
+
+<p align="center">
+  <sub>左侧边栏 · 设置（界面 / 播放模式 / 热键 / 主题） · 气泡模式</sub>
+</p>
+
+**收起状态** —— 可拖动的播放条与气泡歌词
+
+![收起状态](assets/bar-strip.jpg)
+
 ## 功能
 
 **播放**
