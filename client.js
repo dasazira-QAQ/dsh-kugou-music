@@ -83,7 +83,13 @@ window.__ModuleLoader__.load({
 }
 .kgm-hk-btn.kgm-on { border-color: var(--kgm-brand); color: var(--kgm-brand); background: color-mix(in srgb, var(--kgm-brand) 10%, transparent); }
 .kgm-modes-mini { display: flex; gap: 6px; }
-.kgm-mode-pill { border: 1px solid var(--kgm-border); background: transparent; color: var(--kgm-dim); border-radius: 8px; padding: 4px 10px; font-size: 11px; cursor: pointer; }
+.kgm-mode-pill { flex: none; white-space: nowrap; border: 1px solid var(--kgm-border); background: transparent; color: var(--kgm-dim); border-radius: 8px; padding: 4px 10px; font-size: 11px; cursor: pointer; }
+/* 播放条变窄时按档位渐进隐藏次要控件，避免文字挤出边框 */
+.kgm-dock-wide .kgm-volume { display: none; }
+.kgm-dock-slim .kgm-volume,
+.kgm-dock-slim .kgm-cover { display: none; }
+.kgm-dock-slim .kgm-meta { max-width: 30%; }
+.kgm-dock-slim .kgm-bar { gap: 4px; padding: 0 8px; }
 .kgm-mode-pill.kgm-on { border-color: var(--kgm-brand); color: var(--kgm-brand); background: color-mix(in srgb, var(--kgm-brand) 10%, transparent); }
 .kgm-root[data-bg="transparent"] .kgm-bar,
 .kgm-root[data-bg="transparent"] .kgm-panel,
@@ -1801,6 +1807,8 @@ window.__ModuleLoader__.load({
       const DOCK_WIDTH = { full: [100, 680], wide: [90, 600], slim: [76, 500] }
       const dockW = DOCK_WIDTH[cfg.dockWidth] || DOCK_WIDTH.full
       let wrapClass = 'kgm-root'
+      if (cfg.dockWidth === 'slim') wrapClass += ' kgm-dock-slim'
+      else if (cfg.dockWidth === 'wide') wrapClass += ' kgm-dock-wide'
       if (floating) {
         wrapClass += ' kgm-floating'
         wrapStyle.width = `min(${dockW[1]}px, 92vw)`
@@ -1904,26 +1912,30 @@ window.__ModuleLoader__.load({
           h('button', { className: 'kgm-btn', onClick: player.prev, disabled: !p.queue.length, title: '上一首' }, Icon.prev()),
           h('button', { className: 'kgm-main', onClick: player.toggle, title: p.playing ? '暂停' : '播放' }, p.playing ? Icon.pause() : Icon.play()),
           h('button', { className: 'kgm-btn', onClick: player.next, disabled: !p.queue.length, title: '下一首' }, Icon.next()),
-          h(
-            'button',
-            {
-              className: 'kgm-mode-pill' + (cfg.playMode !== 'loop' ? ' kgm-on' : ''),
-              onClick: () => settings.update({ playMode: nextPlayMode(cfg.playMode) }),
-              title: '播放模式：' + MODE_LABEL[cfg.playMode] + '（点击切换）',
-              style: { height: 24 },
-            },
-            MODE_LABEL[cfg.playMode],
-          ),
-          h(
-            'button',
-            {
-              className: 'kgm-mode-pill' + (cfg.showTrans ? ' kgm-on' : ''),
-              onClick: () => settings.update({ showTrans: !cfg.showTrans }),
-              title: cfg.showTrans ? '关闭歌词翻译' : '打开歌词翻译',
-              style: { height: 24 },
-            },
-            '译',
-          ),
+          cfg.dockWidth !== 'slim'
+            ? h(
+                'button',
+                {
+                  className: 'kgm-mode-pill' + (cfg.playMode !== 'loop' ? ' kgm-on' : ''),
+                  onClick: () => settings.update({ playMode: nextPlayMode(cfg.playMode) }),
+                  title: '播放模式：' + MODE_LABEL[cfg.playMode] + '（点击切换）',
+                  style: { height: 24 },
+                },
+                MODE_LABEL[cfg.playMode],
+              )
+            : null,
+          cfg.dockWidth !== 'slim'
+            ? h(
+                'button',
+                {
+                  className: 'kgm-mode-pill' + (cfg.showTrans ? ' kgm-on' : ''),
+                  onClick: () => settings.update({ showTrans: !cfg.showTrans }),
+                  title: cfg.showTrans ? '关闭歌词翻译' : '打开歌词翻译',
+                  style: { height: 24 },
+                },
+                '译',
+              )
+            : null,
           h('input', { className: 'kgm-volume', type: 'range', min: 0, max: 1, step: 0.01, value: p.volume, onChange: (e) => player.setVolume(Number(e.target.value)), title: '音量' }),
           h('button', {
             className: 'kgm-btn' + (cfg.dockLocked ? ' kgm-locked' : ''),
@@ -1933,7 +1945,9 @@ window.__ModuleLoader__.load({
           !cfg.dockLocked
             ? h('button', { className: 'kgm-btn', onClick: () => { setDrag(null); settings.update({ dockPos: null }) }, title: '复位位置' }, Icon.reset())
             : null,
-          h('button', { className: 'kgm-btn', onClick: () => { setExpanded(true); setTab('search') }, title: '搜歌' }, Icon.search()),
+          cfg.dockWidth !== 'slim'
+            ? h('button', { className: 'kgm-btn', onClick: () => { setExpanded(true); setTab('search') }, title: '搜歌' }, Icon.search())
+            : null,
         ),
       )
 
