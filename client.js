@@ -1857,7 +1857,6 @@ window.__ModuleLoader__.load({
       }
 
       if (cfg.sideCollapsed) {
-        const line = currentLine(p.lyric, p.cur)
         const bpos = bubbleDrag || cfg.bubblePos
         const bubbleStyle = {
           background: cfg.theme === 'dark' ? `rgba(26,28,36,${cfg.bgOpacity})` : `rgba(255,255,255,${cfg.bgOpacity})`,
