@@ -348,12 +348,16 @@ window.__ModuleLoader__.load({
   border: 1px solid var(--kgm-border); color: var(--kgm-fg);
   -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6);
   box-shadow: var(--kgm-shadow); pointer-events: auto; font-size: 13px;
-  animation: kgm-bubble-in .24s cubic-bezier(.2, .8, .25, 1) both;
-  transition: box-shadow .2s;
+  opacity: 0; transform: scale(.82);
+  transition:
+    opacity .24s cubic-bezier(.2, .8, .25, 1),
+    transform .24s cubic-bezier(.2, .8, .25, 1),
+    box-shadow .2s;
   --kgm-bg: rgba(255,255,255,.74); --kgm-fg: #1b1f27; --kgm-dim: rgba(27,31,39,.58);
   --kgm-border: rgba(20,26,40,.10); --kgm-hover: rgba(20,26,40,.07);
   --kgm-shadow: 0 10px 30px rgba(20,26,40,.14); --kgm-brand: #3f6bff;
 }
+.kgm-bubble.kgm-in { opacity: 1; transform: none; }
 .kgm-bubble[data-theme="dark"] {
   --kgm-fg: #eef1f7; --kgm-dim: rgba(238,241,247,.56); --kgm-border: rgba(255,255,255,.12);
   --kgm-hover: rgba(255,255,255,.10); --kgm-shadow: 0 14px 36px rgba(0,0,0,.46);
@@ -1679,24 +1683,35 @@ window.__ModuleLoader__.load({
       const [expanded, setExpanded] = useState(false)
       const [tab, setTab] = useState('search')
       const [drag, setDrag] = useState(null)
-      const [panelH, setPanelH] = useState(460)
+      const [panelBox, setPanelBox] = useState(null)
       const barRef = useRef(null)
       const lyricRef = useRef(null)
       const dragInfo = useRef(null)
 
-      // 面板向上展开，按播放条到视口顶部的距离限制高度，避免顶部被裁掉
+      // 面板用 fixed 定位贴到播放条上方：dock 所在的容器有 overflow 裁剪，
+      // 绝对定位向上展开会被切掉顶部，fixed 才能完整显示
       useEffect(() => {
         if (!expanded) return
         const calc = () => {
           const el = barRef.current
           if (!el) return
-          const rect = el.getBoundingClientRect()
-          setPanelH(Math.max(240, Math.min(460, Math.round(rect.top - 26))))
+          const r = el.getBoundingClientRect()
+          const h = Math.max(240, Math.min(460, Math.round(r.top - 26)))
+          setPanelBox({
+            left: Math.round(r.left),
+            width: Math.round(r.width),
+            height: h,
+            bottom: Math.round(window.innerHeight - r.top + 10),
+          })
         }
         calc()
         window.addEventListener('resize', calc)
-        return () => window.removeEventListener('resize', calc)
-      }, [expanded])
+        window.addEventListener('scroll', calc, true)
+        return () => {
+          window.removeEventListener('resize', calc)
+          window.removeEventListener('scroll', calc, true)
+        }
+      }, [expanded, drag, cfg.ui, cfg.dockLocked])
 
       useEffect(() => {
         if (cfg.ui !== 'dock' || cfg.dockLocked) {
@@ -1782,7 +1797,19 @@ window.__ModuleLoader__.load({
         expanded
           ? h(
               'div',
-              { className: 'kgm-panel', style: { height: panelH } },
+              {
+                className: 'kgm-panel',
+                style: panelBox
+                  ? {
+                      position: 'fixed',
+                      left: panelBox.left,
+                      width: panelBox.width,
+                      right: 'auto',
+                      bottom: panelBox.bottom,
+                      height: panelBox.height,
+                    }
+                  : { height: 460 },
+              },
               h(
                 'div',
                 { className: 'kgm-left' },
@@ -1897,6 +1924,17 @@ window.__ModuleLoader__.load({
       const lyricRef = useRef(null)
       const [bubbleDrag, setBubbleDrag] = useState(null)
       const bubbleInfo = useRef(null)
+      const [bubbleIn, setBubbleIn] = useState(false)
+
+      // 入场动画只播一次：挂载后下一帧加 class，后续重渲染不会重播
+      useEffect(() => {
+        if (!cfg.sideCollapsed) {
+          setBubbleIn(false)
+          return
+        }
+        const id = requestAnimationFrame(() => setBubbleIn(true))
+        return () => cancelAnimationFrame(id)
+      }, [cfg.sideCollapsed])
 
       useEffect(() => {
         if (!bubbleDrag) return
@@ -1960,7 +1998,7 @@ window.__ModuleLoader__.load({
         return h(
           'div',
           {
-            className: 'kgm-bubble',
+            className: 'kgm-bubble' + (bubbleIn ? ' kgm-in' : ''),
             'data-theme': cfg.theme,
             'data-bg': cfg.bgMode,
             style: { ...bubbleStyle, '--kgm-bubble-fs': cfg.bubbleFontSize + 'px' },
