@@ -84,6 +84,24 @@ window.__ModuleLoader__.load({
 .kgm-hk-btn.kgm-on { border-color: var(--kgm-brand); color: var(--kgm-brand); background: color-mix(in srgb, var(--kgm-brand) 10%, transparent); }
 .kgm-modes-mini { display: flex; gap: 6px; }
 .kgm-mode-pill { flex: none; white-space: nowrap; border: 1px solid var(--kgm-border); background: transparent; color: var(--kgm-dim); border-radius: 8px; padding: 4px 10px; font-size: 11px; cursor: pointer; }
+/* 拖动期间关掉毛玻璃：移动中的 backdrop-filter 会每帧重采样导致闪烁 */
+.kgm-root.kgm-dragging[data-bg="glass"] .kgm-bar,
+.kgm-root.kgm-dragging[data-bg="glass"] .kgm-panel,
+.kgm-bubble.kgm-dragging[data-bg="glass"] {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.kgm-root.kgm-dragging[data-bg="glass"][data-theme="light"] .kgm-bar,
+.kgm-root.kgm-dragging[data-bg="glass"][data-theme="light"] .kgm-panel,
+.kgm-bubble.kgm-dragging[data-bg="glass"][data-theme="light"] {
+  background: rgba(248, 250, 253, .97);
+}
+.kgm-root.kgm-dragging[data-bg="glass"][data-theme="dark"] .kgm-bar,
+.kgm-root.kgm-dragging[data-bg="glass"][data-theme="dark"] .kgm-panel,
+.kgm-bubble.kgm-dragging[data-bg="glass"][data-theme="dark"] {
+  background: rgba(26, 28, 36, .97);
+}
+.kgm-root.kgm-dragging .kgm-bar { cursor: grabbing; }
 /* 播放条变窄时按档位渐进隐藏次要控件，避免文字挤出边框 */
 .kgm-dock-wide .kgm-volume { display: none; }
 .kgm-dock-slim .kgm-volume,
@@ -1711,6 +1729,7 @@ window.__ModuleLoader__.load({
       const [expanded, setExpanded] = useState(false)
       const [tab, setTab] = useState('search')
       const [drag, setDrag] = useState(null)
+      const [dragging, setDragging] = useState(false)
       const [panelBox, setPanelBox] = useState(null)
       const barRef = useRef(null)
       const lyricRef = useRef(null)
@@ -1762,6 +1781,7 @@ window.__ModuleLoader__.load({
         const rect = barRef.current.getBoundingClientRect()
         dragInfo.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top, w: rect.width }
         setDrag({ x: rect.left, y: rect.top })
+        setDragging(true)
         e.preventDefault()
       }, [cfg.dockLocked])
 
@@ -1780,6 +1800,7 @@ window.__ModuleLoader__.load({
             return d
           })
           dragInfo.current = null
+          setDragging(false)
           document.body.style.userSelect = ''
         }
         window.addEventListener('pointermove', move)
@@ -1815,6 +1836,7 @@ window.__ModuleLoader__.load({
       const DOCK_WIDTH = { full: [100, 680], wide: [90, 600], slim: [76, 500] }
       const dockW = DOCK_WIDTH[cfg.dockWidth] || DOCK_WIDTH.full
       let wrapClass = 'kgm-root'
+      if (dragging) wrapClass += ' kgm-dragging'
       if (cfg.dockWidth === 'slim') wrapClass += ' kgm-dock-slim'
       else if (cfg.dockWidth === 'wide') wrapClass += ' kgm-dock-wide'
       if (floating) {
@@ -1974,6 +1996,7 @@ window.__ModuleLoader__.load({
       const [tab, setTab] = useState('search')
       const lyricRef = useRef(null)
       const [bubbleDrag, setBubbleDrag] = useState(null)
+      const [bubbleDragging, setBubbleDragging] = useState(false)
       const bubbleInfo = useRef(null)
       const [bubbleIn, setBubbleIn] = useState(false)
 
@@ -2003,6 +2026,7 @@ window.__ModuleLoader__.load({
             return d
           })
           bubbleInfo.current = null
+          setBubbleDragging(false)
           document.body.style.userSelect = ''
         }
         window.addEventListener('pointermove', move)
@@ -2042,6 +2066,7 @@ window.__ModuleLoader__.load({
           const rect = e.currentTarget.getBoundingClientRect()
           bubbleInfo.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top }
           setBubbleDrag({ x: rect.left, y: rect.top })
+          setBubbleDragging(true)
           e.preventDefault()
         }
         const bubbleTrans = cfg.showTrans ? currentTrans(p.lyric, p.cur) : ''
@@ -2049,7 +2074,7 @@ window.__ModuleLoader__.load({
         return h(
           'div',
           {
-            className: 'kgm-bubble' + (bubbleIn ? ' kgm-in' : ''),
+            className: 'kgm-bubble' + (bubbleIn ? ' kgm-in' : '') + (bubbleDragging ? ' kgm-dragging' : ''),
             'data-theme': cfg.theme,
             'data-bg': cfg.bgMode,
             style: { ...bubbleStyle, '--kgm-bubble-fs': cfg.bubbleFontSize + 'px' },
