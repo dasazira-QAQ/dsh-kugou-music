@@ -1,7 +1,7 @@
 {
   "name": "dsh-kugou-music",
   "version": "0.1.0",
-  "description": "在 DeepSeek Harness 里搜索、播放酷狗音乐：输入框下方常驻播放条 + 逐字歌词面板，免费歌开箱即听，VIP 歌可填 Cookie。",
+  "description": "在 DeepSeek Harness 里搜索、播放酷狗音乐：本机歌单解密、逐字歌词与翻译、两套 UI、自定义热键与播放模式。",
   "type": "module",
   "exports": {
     ".": "./index.js",
