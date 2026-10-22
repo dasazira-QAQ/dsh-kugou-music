@@ -311,7 +311,10 @@ window.__ModuleLoader__.load({
 }
 .kgm-lyric-line.kgm-active {
   opacity: 1; font-weight: 600; color: var(--kgm-brand);
-  animation: kgm-lyric-in .36s cubic-bezier(.22, .8, .3, 1);
+}
+/* 由 JS 每次切句重新挂这个 class，确保动画必然重播 */
+.kgm-lyric-line.kgm-anim {
+  animation: kgm-lyric-in .42s cubic-bezier(.22, .8, .3, 1);
 }
 @keyframes kgm-lyric-in {
   from { opacity: .12; transform: translateY(14px); }
@@ -1197,6 +1200,11 @@ window.__ModuleLoader__.load({
         if (!box || lineIdx < 0) return
         const el = box.querySelector('[data-line="' + lineIdx + '"]')
         if (!el) return
+        // 强制重启动画：class 反复增删不一定能重播 CSS animation，
+        // 这里移除后强制重排再加回，保证每一句切入都有动画
+        el.classList.remove('kgm-anim')
+        void el.offsetWidth
+        el.classList.add('kgm-anim')
         // 用视口坐标算差值，比 offsetTop 更稳（不受定位祖先影响）
         const boxRect = box.getBoundingClientRect()
         const elRect = el.getBoundingClientRect()
@@ -2275,7 +2283,7 @@ window.__ModuleLoader__.load({
                 ? bubbleList.map((l, i) =>
                     h(
                       'div',
-                      { key: i, className: 'kgm-bubble-line' + (l.active ? ' kgm-active' : '') },
+                      { key: l.active ? 'a' + i : 'i' + i, className: 'kgm-bubble-line' + (l.active ? ' kgm-active' : '') },
                       l.text,
                       l.active && bubbleTrans ? h('div', { className: 'kgm-bubble-trans' }, bubbleTrans) : null,
                     ),
