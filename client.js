@@ -305,7 +305,18 @@ window.__ModuleLoader__.load({
 .kgm-hint { padding: 16px 14px; font-size: 12px; color: var(--kgm-dim); line-height: 1.65; }
 .kgm-lyric-head { padding: 10px 14px 2px; font-size: 12px; color: var(--kgm-dim); display: flex; justify-content: space-between; gap: 8px; }
 .kgm-lyric-box { flex: 1; overflow-y: auto; padding: 8px 18px 20px; scrollbar-width: thin; }
-.kgm-lyric-line { padding: 5px 0; font-size: 13px; line-height: 1.55; opacity: .38; transition: opacity .22s; }
+.kgm-lyric-line {
+  padding: 5px 0; font-size: 13px; line-height: 1.55; opacity: .34;
+  transition: opacity .34s ease;
+}
+.kgm-lyric-line.kgm-active {
+  opacity: 1; font-weight: 600; color: var(--kgm-brand);
+  animation: kgm-lyric-in .36s cubic-bezier(.22, .8, .3, 1);
+}
+@keyframes kgm-lyric-in {
+  from { opacity: .12; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .kgm-lyric-line.kgm-active { opacity: 1; font-weight: 600; color: var(--kgm-brand); }
 .kgm-lyric-trans { font-size: 11px; line-height: 1.45; opacity: .68; font-weight: 400; margin-top: 2px; color: var(--kgm-fg); }
 .kgm-lyric-line.kgm-active .kgm-lyric-trans { opacity: .82; }
@@ -394,8 +405,11 @@ window.__ModuleLoader__.load({
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 1px; line-height: 1.45;
 }
-.kgm-bubble-line { font-size: var(--kgm-bubble-fs, 12px); opacity: .46; transition: opacity .2s; }
-.kgm-bubble-line.kgm-active { opacity: 1; font-weight: 600; color: var(--kgm-brand); }
+.kgm-bubble-line { font-size: var(--kgm-bubble-fs, 12px); opacity: .46; transition: opacity .3s ease; }
+.kgm-bubble-line.kgm-active {
+  opacity: 1; font-weight: 600; color: var(--kgm-brand);
+  animation: kgm-lyric-in .36s cubic-bezier(.22, .8, .3, 1);
+}
 .kgm-bubble-trans { font-size: calc(var(--kgm-bubble-fs, 12px) - 1.5px); opacity: .7; line-height: 1.35; font-weight: 400; color: var(--kgm-fg); }
 .kgm-bubble-actions { display: flex; gap: 6px; align-items: center; }
 .kgm-mini {
@@ -1183,7 +1197,11 @@ window.__ModuleLoader__.load({
         if (!box || lineIdx < 0) return
         const el = box.querySelector('[data-line="' + lineIdx + '"]')
         if (!el) return
-        box.scrollTo({ top: Math.max(0, el.offsetTop - box.clientHeight / 2 + el.offsetHeight / 2), behavior: 'smooth' })
+        // 用视口坐标算差值，比 offsetTop 更稳（不受定位祖先影响）
+        const boxRect = box.getBoundingClientRect()
+        const elRect = el.getBoundingClientRect()
+        const delta = elRect.top - boxRect.top - (box.clientHeight - elRect.height) / 2
+        box.scrollTo({ top: Math.max(0, box.scrollTop + delta), behavior: 'smooth' })
       }, [lineIdx, boxRef])
 
       if (!lyric.lines.length) return h('div', { className: 'kgm-hint' }, '播放歌曲后这里显示歌词')
