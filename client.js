@@ -1186,6 +1186,7 @@ window.__ModuleLoader__.load({
       const [activeLocal, setActiveLocal] = useState('recent')
       const [localError, setLocalError] = useState('')
       const [notice, setNotice] = useState('')
+      const [queueQuery, setQueueQuery] = useState('')
 
       useEffect(() => {
         if (!notice) return
@@ -1421,14 +1422,56 @@ window.__ModuleLoader__.load({
         )
       }
 
+      // 队列搜索：保留原始索引，删除/播放不会错位
+      const queueKw = queueQuery.trim().toLowerCase()
+      const queueRows = p.queue
+        .map((song, index) => ({ song, index }))
+        .filter(({ song }) => {
+          if (!queueKw) return true
+          return ((song.name || '') + ' ' + (song.singer || '')).toLowerCase().includes(queueKw)
+        })
+
       return h(
         'div',
-        { className: 'kgm-list' },
-        p.queue.length
-          ? p.queue.map((s, i) =>
-              h(SongRow, { key: (s.hash || s.localPath || 'q') + i, song: s, i, listKey: 'queue', current: currentKey === (s.hash || s.localPath), showIdx: true, onPick: pick, onRemove: (idx) => player.removeAt(idx) }),
-            )
-          : h('div', { className: 'kgm-hint' }, '队列还是空的，先去搜几首歌。'),
+        { style: { display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 } },
+        h(
+          'div',
+          { className: 'kgm-search', style: { paddingTop: 2 } },
+          h('input', {
+            className: 'kgm-input',
+            placeholder: '在队列里搜索（歌名 / 歌手）',
+            value: queueQuery,
+            onChange: (e) => setQueueQuery(e.target.value),
+            onKeyDown: (e) => {
+              if (e.key === 'Escape') setQueueQuery('')
+            },
+          }),
+          queueKw
+            ? h('button', { className: 'kgm-btn', onClick: () => setQueueQuery(''), title: '清除搜索' }, '×')
+            : null,
+        ),
+        queueKw
+          ? h('div', { className: 'kgm-small', style: { padding: '0 14px 4px', margin: 0 } },
+              '匹配 ' + queueRows.length + ' / ' + p.queue.length + ' 首')
+          : null,
+        h(
+          'div',
+          { className: 'kgm-list' },
+          queueRows.length
+            ? queueRows.map(({ song, index }) =>
+                h(SongRow, {
+                  key: (song.hash || song.localPath || 'q') + index,
+                  song,
+                  i: index,
+                  listKey: 'queue',
+                  current: currentKey === (song.hash || song.localPath),
+                  showIdx: true,
+                  onPick: pick,
+                  onRemove: (idx) => player.removeAt(idx),
+                }),
+              )
+            : h('div', { className: 'kgm-hint' }, queueKw ? '队列里没有匹配的歌' : '队列还是空的，先去搜几首歌。'),
+        ),
       )
     }
 
