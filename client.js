@@ -480,6 +480,8 @@ window.__ModuleLoader__.load({
         bubblePos: initial.bubblePos || null,
         playMode: ['loop', 'order', 'shuffle'].includes(initial.playMode) ? initial.playMode : 'loop',
         hotkeys: Object.assign({ toggle: '', next: '', prev: '' }, initial.hotkeys || {}),
+        // 记住上次播放的歌和进度，下次启动时恢复（不自动播放，等用户点）
+        resumePlayback: initial.resumePlayback !== false,
       }
       const listeners = new Set()
       return {
@@ -516,21 +518,26 @@ window.__ModuleLoader__.load({
     /* 播放器单例：两个 UI 共享，切换界面不中断                             */
     /* ------------------------------------------------------------------ */
     function createPlayer() {
+      const bootStore = loadStore()
+      const resume = settings.state.resumePlayback && bootStore.resume && bootStore.resume.song ? bootStore.resume : null
       const state = {
-        song: null,
+        song: resume ? resume.song : null,
         playing: false,
-        cur: 0,
-        dur: 0,
-        queue: Array.isArray(loadStore().queue) ? loadStore().queue : [],
-        index: -1,
+        cur: resume ? Number(resume.cur) || 0 : 0,
+        dur: resume && resume.song && resume.song.duration ? Number(resume.song.duration) : 0,
+        queue: Array.isArray(bootStore.queue) ? bootStore.queue : [],
+        index: resume && Array.isArray(bootStore.queue)
+          ? bootStore.queue.findIndex((s) => (s.hash || s.localPath) === (resume.song.hash || resume.song.localPath))
+          : -1,
         lyric: { lines: [], meta: {} },
         error: '',
-        volume: typeof loadStore().volume === 'number' ? loadStore().volume : 0.8,
+        volume: typeof bootStore.volume === 'number' ? bootStore.volume : 0.8,
       }
       const listeners = new Set()
       let audio = null
       let proxyTried = ''
       let playSeq = 0
+      let lastProgressSave = 0
       const history = []
 
       const emit = () => listeners.forEach((fn) => fn())
@@ -543,6 +550,12 @@ window.__ModuleLoader__.load({
         audio.addEventListener('timeupdate', () => {
           state.cur = audio.currentTime || 0
           emit()
+          // 每 4 秒把进度落一次盘，退出后能接着听
+          const now = Date.now()
+          if (state.song && now - lastProgressSave > 4000) {
+            lastProgressSave = now
+            saveStore({ resume: { song: state.song, cur: Math.round(audio.currentTime || 0) } })
+          }
         })
         const onMeta = () => {
           state.dur = Number.isFinite(audio.duration) ? audio.duration : 0
@@ -557,6 +570,9 @@ window.__ModuleLoader__.load({
         audio.addEventListener('pause', () => {
           state.playing = false
           emit()
+          if (state.song) {
+            saveStore({ resume: { song: state.song, cur: Math.round(audio.currentTime || 0) } })
+          }
         })
         audio.addEventListener('ended', () => playNext(true))
         audio.addEventListener('error', () => {
@@ -633,7 +649,11 @@ window.__ModuleLoader__.load({
         state.dur = 0
         state.lyric = { lines: [], meta: {} }
         emit()
-        saveStore({ queue: state.queue.map((s) => ({ hash: s.hash, name: s.name, singer: s.singer, duration: s.duration, localPath: s.localPath, albumId: s.albumId, kgm: s.kgm })) })
+        saveStore({
+          queue: state.queue.map((s) => ({ hash: s.hash, name: s.name, singer: s.singer, duration: s.duration, localPath: s.localPath, albumId: s.albumId, kgm: s.kgm })),
+          // 新歌从 0 开始，退出后恢复的是这首
+          resume: { song: state.song, cur: 0 },
+        })
 
         if (String(song.localPath || '').trim()) {
           if (seq !== playSeq) return
@@ -755,8 +775,26 @@ window.__ModuleLoader__.load({
           playSong(state.queue[0])
           return
         }
-        if (a.paused) a.play().catch(() => {})
-        else a.pause()
+        if (!a.paused) {
+          a.pause()
+          return
+        }
+        // 启动时恢复的场景：音频还没加载过，先拿地址再跳回上次的进度
+        if (!a.src && state.song) {
+          const resumeAt = state.cur
+          playSong(state.song).then(() => {
+            if (resumeAt > 0) {
+              const el = ensureAudio()
+              try {
+                el.currentTime = resumeAt
+              } catch {
+                /* 有些流不支持 seek，忽略 */
+              }
+            }
+          })
+          return
+        }
+        a.play().catch(() => {})
       }
 
       function seekTo(ratio) {
@@ -1587,6 +1625,17 @@ window.__ModuleLoader__.load({
             onChange: (e) => settings.update({ hotkeysWhileTyping: e.target.checked }),
           }),
           h('span', { className: 'kgm-switch-text' }, '在输入框打字时也响应组合键（仅 Ctrl / Alt / Shift 组合）'),
+        ),
+        h('div', { className: 'kgm-section-title' }, '播放'),
+        h(
+          'label',
+          { className: 'kgm-switch', style: { marginBottom: 12 } },
+          h('input', {
+            type: 'checkbox',
+            checked: cfg.resumePlayback,
+            onChange: (e) => settings.update({ resumePlayback: e.target.checked }),
+          }),
+          h('span', { className: 'kgm-switch-text' }, '记住上次播放的歌和进度（下次启动从这里继续）'),
         ),
         h('div', { className: 'kgm-section-title' }, '背景'),
         h(
