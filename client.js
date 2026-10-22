@@ -675,6 +675,11 @@ window.__ModuleLoader__.load({
           emit()
           return
         }
+        if (info.trial) {
+          // 服务端不报错，只降级给试听片段——通常是登录 token 过期了
+          state.error = '只拿到试听片段：酷狗登录可能已过期，请到「设置 → 账号」重新粘贴 Cookie'
+          emit()
+        }
         proxyTried = ''
         a.src = info.url
         a.volume = state.volume
