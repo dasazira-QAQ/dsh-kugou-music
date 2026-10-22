@@ -409,10 +409,25 @@ window.__ModuleLoader__.load({
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 1px; line-height: 1.45;
 }
-.kgm-bubble-line { font-size: var(--kgm-bubble-fs, 12px); opacity: .46; transition: opacity .3s ease; }
-.kgm-bubble-line.kgm-active {
-  opacity: 1; font-weight: 600; color: var(--kgm-brand);
-  animation: kgm-lyric-in .36s cubic-bezier(.22, .8, .3, 1);
+.kgm-bubble-line { font-size: var(--kgm-bubble-fs, 12px); opacity: .46; }
+.kgm-bubble-line.kgm-active { opacity: 1; font-weight: 600; color: var(--kgm-brand); }
+/* 整块歌词向上滚动：旧窗口滑出、新窗口从下方补入 */
+.kgm-bubble-roller { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.kgm-bubble-roll-out,
+.kgm-bubble-roll-in {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 1px;
+}
+.kgm-bubble-roll-out { animation: kgm-roll-out .44s cubic-bezier(.4, 0, .2, 1) forwards; }
+.kgm-bubble-roll-in { animation: kgm-roll-in .44s cubic-bezier(.2, .8, .3, 1); }
+@keyframes kgm-roll-out {
+  from { transform: translateY(0); opacity: .85; }
+  to { transform: translateY(-105%); opacity: 0; }
+}
+@keyframes kgm-roll-in {
+  from { transform: translateY(105%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
 }
 .kgm-bubble-trans { font-size: calc(var(--kgm-bubble-fs, 12px) - 1.5px); opacity: .7; line-height: 1.35; font-weight: 400; color: var(--kgm-fg); }
 .kgm-bubble-actions { display: flex; gap: 6px; align-items: center; }
@@ -2179,6 +2194,17 @@ window.__ModuleLoader__.load({
       const [bubbleDragging, setBubbleDragging] = useState(false)
       const bubbleInfo = useRef(null)
       const [bubbleIn, setBubbleIn] = useState(false)
+      const prevBubbleRef = useRef([])
+
+      // 气泡歌词：整块向上滚动的关键——记住上一句的窗口内容，
+      // 切句时让「旧窗口向上滑出、新窗口从下补进来」
+      const bubbleLinesAll = bubbleLinesOf(p.lyric, p.cur, cfg.bubbleLines)
+      const bubbleAbs = (bubbleLinesAll.find((l) => l.active) || {}).abs
+      useEffect(() => {
+        prevBubbleRef.current = bubbleLinesAll
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, [bubbleAbs])
+      const prevBubbleLines = prevBubbleRef.current
 
       // 入场动画只播一次：挂载后下一帧加 class，后续重渲染不会重播
       useEffect(() => {
@@ -2266,7 +2292,7 @@ window.__ModuleLoader__.load({
           e.preventDefault()
         }
         const bubbleTrans = cfg.showTrans ? currentTrans(p.lyric, p.cur) : ''
-        const bubbleList = bubbleLinesOf(p.lyric, p.cur, cfg.bubbleLines)
+        const bubbleList = bubbleLinesAll
         return h(
           'div',
           {
@@ -2280,20 +2306,33 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { className: 'kgm-bubble-lyric' },
-            h(
-              'div',
-              { className: 'kgm-bubble-lyric-inner' },
-              bubbleList.length
-                ? bubbleList.map((l, i) =>
-                    h(
-                      'div',
-                      { key: (l.active ? 'a' : 'i') + l.abs, className: 'kgm-bubble-line' + (l.active ? ' kgm-active' : '') },
-                      l.text,
-                      l.active && bubbleTrans ? h('div', { className: 'kgm-bubble-trans' }, bubbleTrans) : null,
+            bubbleList.length
+              ? h(
+                  'div',
+                  { className: 'kgm-bubble-roller', key: 'roll-' + (bubbleAbs ?? 0) },
+                  prevBubbleLines.length
+                    ? h(
+                        'div',
+                        { className: 'kgm-bubble-roll-out' },
+                        prevBubbleLines.map((l, i) =>
+                          h('div', { key: i, className: 'kgm-bubble-line' + (l.active ? ' kgm-active' : '') }, l.text),
+                        ),
+                      )
+                    : null,
+                  h(
+                    'div',
+                    { className: 'kgm-bubble-roll-in' },
+                    bubbleList.map((l, i) =>
+                      h(
+                        'div',
+                        { key: i, className: 'kgm-bubble-line' + (l.active ? ' kgm-active' : '') },
+                        l.text,
+                        l.active && bubbleTrans ? h('div', { className: 'kgm-bubble-trans' }, bubbleTrans) : null,
+                      ),
                     ),
-                  )
-                : h('div', null, p.song ? p.song.name : '♫ 酷狗音乐'),
-            ),
+                  ),
+                )
+              : h('div', { className: 'kgm-bubble-lyric-inner' }, h('div', null, p.song ? p.song.name : '♫ 酷狗音乐')),
           ),
           h(
             'div',
