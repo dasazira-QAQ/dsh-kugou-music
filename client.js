@@ -1180,6 +1180,8 @@ window.__ModuleLoader__.load({
         out.push({
           text: lyric.lines[i].words.map((w) => w.text).join(''),
           active: i === idx,
+          // 绝对行号：作为 React key，切句时才能重建当前行触发动画
+          abs: i,
         })
       }
       return out
@@ -2285,7 +2287,7 @@ window.__ModuleLoader__.load({
                 ? bubbleList.map((l, i) =>
                     h(
                       'div',
-                      { key: l.active ? 'a' + i : 'i' + i, className: 'kgm-bubble-line' + (l.active ? ' kgm-active' : '') },
+                      { key: (l.active ? 'a' : 'i') + l.abs, className: 'kgm-bubble-line' + (l.active ? ' kgm-active' : '') },
                       l.text,
                       l.active && bubbleTrans ? h('div', { className: 'kgm-bubble-trans' }, bubbleTrans) : null,
                     ),
