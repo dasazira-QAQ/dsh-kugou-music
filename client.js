@@ -1782,7 +1782,8 @@ window.__ModuleLoader__.load({
 
       const startDrag = useCallback((e) => {
         if (!barRef.current || cfg.dockLocked) return
-        if (e.target.closest('button, input, textarea')) return
+        // 进度条要独立拖动，不能被当成拖整条播放条
+        if (e.target.closest('button, input, textarea, .kgm-track')) return
         const rect = barRef.current.getBoundingClientRect()
         dragInfo.current = { dx: e.clientX - rect.left, dy: e.clientY - rect.top, w: rect.width }
         setDrag({ x: rect.left, y: rect.top })
@@ -1856,10 +1857,26 @@ window.__ModuleLoader__.load({
         wrapStyle.margin = '0 auto'
       }
 
+      // 支持按住拖动：pointerdown 定位 + 全局 pointermove 跟随
       const onSeek = (e) => {
+        if (e.button) return
+        e.preventDefault()
         const el = e.currentTarget
         const rect = el.getBoundingClientRect()
-        player.seekTo((e.clientX - rect.left) / rect.width)
+        const apply = (clientX) => {
+          const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
+          player.seekTo(ratio)
+        }
+        apply(e.clientX)
+        const move = (ev) => apply(ev.clientX)
+        const up = () => {
+          window.removeEventListener('pointermove', move)
+          window.removeEventListener('pointerup', up)
+          document.body.style.userSelect = ''
+        }
+        document.body.style.userSelect = 'none'
+        window.addEventListener('pointermove', move)
+        window.addEventListener('pointerup', up)
       }
 
       const inner = h(
@@ -1937,7 +1954,7 @@ window.__ModuleLoader__.load({
             { className: 'kgm-progress' },
             h(
               'div',
-              { className: 'kgm-track', onClick: onSeek, title: '点击跳转' },
+              { className: 'kgm-track', onPointerDown: onSeek, title: '点击跳转' },
               h('div', { className: 'kgm-track-bar' }),
               h('div', { className: 'kgm-track-fill', style: { width: progress + '%' } }),
               h('div', { className: 'kgm-thumb', style: { left: progress + '%' } }),
@@ -2050,8 +2067,24 @@ window.__ModuleLoader__.load({
       const progress = p.dur > 0 ? Math.min(100, (p.cur / p.dur) * 100) : 0
       const panelBg = cfg.theme === 'dark' ? `rgba(26,28,36,${cfg.bgOpacity})` : `rgba(255,255,255,${cfg.bgOpacity})`
       const onSeek = (e) => {
-        const rect = e.currentTarget.getBoundingClientRect()
-        player.seekTo((e.clientX - rect.left) / rect.width)
+        if (e.button) return
+        e.preventDefault()
+        const el = e.currentTarget
+        const rect = el.getBoundingClientRect()
+        const apply = (clientX) => {
+          const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
+          player.seekTo(ratio)
+        }
+        apply(e.clientX)
+        const move = (ev) => apply(ev.clientX)
+        const up = () => {
+          window.removeEventListener('pointermove', move)
+          window.removeEventListener('pointerup', up)
+          document.body.style.userSelect = ''
+        }
+        document.body.style.userSelect = 'none'
+        window.addEventListener('pointermove', move)
+        window.addEventListener('pointerup', up)
       }
 
       if (cfg.sideCollapsed) {
@@ -2216,7 +2249,7 @@ window.__ModuleLoader__.load({
             h('span', { className: 'kgm-time' }, fmt(p.cur)),
             h(
               'div',
-              { className: 'kgm-track', onClick: onSeek, style: { flex: 1 } },
+              { className: 'kgm-track', onPointerDown: onSeek, style: { flex: 1 } },
               h('div', { className: 'kgm-track-bar' }),
               h('div', { className: 'kgm-track-fill', style: { width: progress + '%' } }),
               h('div', { className: 'kgm-thumb', style: { left: progress + '%' } }),
