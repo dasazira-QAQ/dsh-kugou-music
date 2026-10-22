@@ -1957,16 +1957,17 @@ window.__ModuleLoader__.load({
       if (floating) {
         wrapClass += ' kgm-floating'
         const moved = drag || cfg.dockPos
+        // 浮动状态下宽度始终和输入框对齐（乘档位比例），拖动不改变宽度
+        const floatW = holderBox
+          ? Math.max(240, Math.round(holderBox.w * (dockW[0] / 100)))
+          : Math.min(dockW[1], Math.round(window.innerWidth * 0.92))
+        wrapStyle.width = floatW + 'px'
         if (moved) {
-          // 用户拖动过：保持浮动尺寸，跟着坐标走
-          wrapStyle.width = `min(${dockW[1]}px, 92vw)`
           wrapStyle.left = moved.x + 'px'
           wrapStyle.top = moved.y + 'px'
         } else if (holderBox) {
-          // 复位 / 刚解锁：宽度和居中都对齐输入框，贴在聊天栏上方
-          const w = Math.max(240, Math.round(holderBox.w * (dockW[0] / 100)))
-          wrapStyle.width = w + 'px'
-          wrapStyle.left = Math.round(holderBox.x + (holderBox.w - w) / 2) + 'px'
+          // 复位 / 刚解锁：居中贴在聊天栏上方
+          wrapStyle.left = Math.round(holderBox.x + (holderBox.w - floatW) / 2) + 'px'
           wrapStyle.top = holderBox.y + 'px'
         } else {
           // 还没量到默认位置时先居中兜底（不用 transform，免得影响 fixed 面板定位）
