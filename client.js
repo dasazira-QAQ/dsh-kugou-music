@@ -1830,9 +1830,25 @@ window.__ModuleLoader__.load({
       const [drag, setDrag] = useState(null)
       const [dragging, setDragging] = useState(false)
       const [panelBox, setPanelBox] = useState(null)
+      const [holderBox, setHolderBox] = useState(null)
       const barRef = useRef(null)
+      const holderRef = useRef(null)
       const lyricRef = useRef(null)
       const dragInfo = useRef(null)
+
+      // 记录播放条在文档流里的默认位置（聊天栏与输入框之间），
+      // 浮动和复位时都贴回这里，而不是飘到页面底部
+      useEffect(() => {
+        const calc = () => {
+          const el = holderRef.current
+          if (!el) return
+          const r = el.getBoundingClientRect()
+          if (r.width > 0) setHolderBox({ x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width) })
+        }
+        calc()
+        window.addEventListener('resize', calc)
+        return () => window.removeEventListener('resize', calc)
+      }, [cfg.ui, cfg.dockWidth])
 
       // 面板用 fixed 定位贴到播放条上方：dock 所在的容器有 overflow 裁剪，
       // 绝对定位向上展开会被切掉顶部，fixed 才能完整显示
@@ -1865,7 +1881,7 @@ window.__ModuleLoader__.load({
           window.removeEventListener('resize', calc)
           window.removeEventListener('scroll', calc, true)
         }
-      }, [expanded, drag, cfg.ui, cfg.dockLocked, cfg.dockWidth])
+      }, [expanded, drag, cfg.ui, cfg.dockLocked, cfg.dockWidth, holderBox])
 
       useEffect(() => {
         if (cfg.ui !== 'dock' || cfg.dockLocked) {
@@ -1918,7 +1934,8 @@ window.__ModuleLoader__.load({
 
       const progress = p.dur > 0 ? Math.min(100, (p.cur / p.dur) * 100) : 0
       const floating = !cfg.dockLocked
-      const pos = drag || cfg.dockPos
+      // 拖动位置优先；没拖过就贴回文档流里的默认位置（聊天栏上方）
+      const pos = drag || cfg.dockPos || holderBox
       // 透明度设置要作用到播放条和展开菜单，透明模式则都清掉
       const transparent = cfg.bgMode === 'transparent'
       const dockBg = transparent
@@ -1942,10 +1959,14 @@ window.__ModuleLoader__.load({
       if (floating) {
         wrapClass += ' kgm-floating'
         wrapStyle.width = `min(${dockW[1]}px, 92vw)`
-        wrapStyle.left = pos ? pos.x + 'px' : '50%'
-        wrapStyle.top = pos ? pos.y + 'px' : 'auto'
-        wrapStyle.bottom = pos ? 'auto' : '90px'
-        if (!pos) wrapStyle.transform = 'translateX(-50%)'
+        if (pos) {
+          wrapStyle.left = pos.x + 'px'
+          wrapStyle.top = pos.y + 'px'
+        } else {
+          // 还没量到默认位置时先居中兜底（不用 transform，免得影响 fixed 面板定位）
+          wrapStyle.left = '50%'
+          wrapStyle.bottom = '90px'
+        }
       } else if (dockW[0] < 100) {
         wrapStyle.width = dockW[0] + '%'
         wrapStyle.margin = '0 auto'
@@ -2097,9 +2118,15 @@ window.__ModuleLoader__.load({
         ),
       )
 
-      if (!floating) return inner
-      // 浮动时 inner 是 fixed，会脱离文档流；外面补一个等高的占位，避免输入框位置跳动
-      return h('div', { style: { height: 52, position: 'relative' } }, inner)
+      // 外层 holder 始终存在：浮动时给 inner 占位，同时用它量出「聊天栏上方」的默认坐标
+      return h(
+        'div',
+        {
+          ref: holderRef,
+          style: floating ? { height: 52, position: 'relative' } : undefined,
+        },
+        inner,
+      )
     }
 
     /* ------------------------------------------------------------------ */
