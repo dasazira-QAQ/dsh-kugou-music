@@ -787,6 +787,8 @@ window.__ModuleLoader__.load({
               const el = ensureAudio()
               try {
                 el.currentTime = resumeAt
+                // 立刻把恢复点写回去，避免下次又被 4 秒节流覆盖成 0
+                saveStore({ resume: { song: state.song, cur: resumeAt } })
               } catch {
                 /* 有些流不支持 seek，忽略 */
               }
