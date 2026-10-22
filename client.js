@@ -1934,8 +1934,6 @@ window.__ModuleLoader__.load({
 
       const progress = p.dur > 0 ? Math.min(100, (p.cur / p.dur) * 100) : 0
       const floating = !cfg.dockLocked
-      // 拖动位置优先；没拖过就贴回文档流里的默认位置（聊天栏上方）
-      const pos = drag || cfg.dockPos || holderBox
       // 透明度设置要作用到播放条和展开菜单，透明模式则都清掉
       const transparent = cfg.bgMode === 'transparent'
       const dockBg = transparent
@@ -1958,10 +1956,18 @@ window.__ModuleLoader__.load({
       else if (cfg.dockWidth === 'wide') wrapClass += ' kgm-dock-wide'
       if (floating) {
         wrapClass += ' kgm-floating'
-        wrapStyle.width = `min(${dockW[1]}px, 92vw)`
-        if (pos) {
-          wrapStyle.left = pos.x + 'px'
-          wrapStyle.top = pos.y + 'px'
+        const moved = drag || cfg.dockPos
+        if (moved) {
+          // 用户拖动过：保持浮动尺寸，跟着坐标走
+          wrapStyle.width = `min(${dockW[1]}px, 92vw)`
+          wrapStyle.left = moved.x + 'px'
+          wrapStyle.top = moved.y + 'px'
+        } else if (holderBox) {
+          // 复位 / 刚解锁：宽度和居中都对齐输入框，贴在聊天栏上方
+          const w = Math.max(240, Math.round(holderBox.w * (dockW[0] / 100)))
+          wrapStyle.width = w + 'px'
+          wrapStyle.left = Math.round(holderBox.x + (holderBox.w - w) / 2) + 'px'
+          wrapStyle.top = holderBox.y + 'px'
         } else {
           // 还没量到默认位置时先居中兜底（不用 transform，免得影响 fixed 面板定位）
           wrapStyle.left = '50%'
